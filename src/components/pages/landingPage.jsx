@@ -15,9 +15,10 @@ export function LandingPage() {
           <div className="flex gap-4">
             <ThemeToggleButton
                 variant="circle-blur"
+                
                 />
-            <Button asChild variant="outline">
-              <Link href="/login">Login</Link>
+            <Button asChild variant="outline" >
+              <Link href="/login" className="hover:bg-yellow-600 ">Login</Link>
             </Button>
 
             <Button asChild>

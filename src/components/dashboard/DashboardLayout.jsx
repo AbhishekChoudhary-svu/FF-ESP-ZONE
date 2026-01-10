@@ -10,11 +10,33 @@ import { WorldChatTab } from "./tabs/WorldChat"
 import { UserProfile } from "./UserProfile"
 import { EditProfileForm } from "@/components/forms/EditProfile"
 import { CreateTournamentForm } from "@/components/forms/CreateTournament"
+import { useRouter } from "next/navigation"
 
 export function DashboardLayout({ user }) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState("free-tournaments")
   const [showEditProfile, setShowEditProfile] = useState(false)
   const [showCreateTournament, setShowCreateTournament] = useState(false)
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("/api/auth/logout", {
+        method: "POST",
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        console.error("Logout failed:", data.error)
+        return
+      }
+
+      router.replace("/login")
+    } catch (err) {
+      console.error("Unexpected error during logout:", err)
+    }
+  }
+
 
   const tabs = [
     { id: "free-tournaments", label: "Free Tournaments", icon: "🎮" },
@@ -46,7 +68,7 @@ export function DashboardLayout({ user }) {
       <div className="border-b border-border bg-card/50 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-primary/60 to-accent/60 bg-clip-text text-transparent ">FF-ESP-ZONE Dashboard</h1>
-          <Button variant="outline" onClick={() => (window.location.href = "/")}>
+          <Button variant="outline" onClick={handleLogout}>
             Logout
           </Button>
         </div>

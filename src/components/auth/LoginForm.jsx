@@ -1,6 +1,5 @@
 "use client"
 
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,27 +10,43 @@ export function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError("")
+const handleSubmit = async (e) => {
+  e.preventDefault()
+  setError("")
+  setLoading(true)
 
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      })
+  try {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    })
 
-      if (!response.ok) {
-        throw new Error("Login failed")
-      }
+    const data = await response.json()
 
-      window.location.href = "/dashboard"
-    } catch (err) {
-      setError("Invalid email or password")
+    if (response.status === 403) {
+    
+      window.location.href = `/verifyEmail?email=${encodeURIComponent(email)}`
+      return
     }
+
+    if (!response.ok) {
+      setError(data.error || "Login failed")
+      return
+    }
+
+   
+    window.location.href = "/dashboard"
+  } catch (err) {
+    console.error(err)
+    setError("An unexpected error occurred")
+  } finally {
+    setLoading(false)
   }
+}
+
 
   return (
     <Card className="p-6 border-border">
@@ -58,10 +73,14 @@ export function LoginForm() {
           />
         </div>
 
-        {error && <div className="text-destructive text-sm bg-destructive/10 p-3 rounded">{error}</div>}
+        {error && (
+          <div className="text-destructive text-sm bg-destructive/10 p-3 rounded">
+            {error}
+          </div>
+        )}
 
-        <Button type="submit" className="w-full">
-          Sign In
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Signing in..." : "Sign In"}
         </Button>
 
         <div className="relative my-4">
@@ -72,10 +91,14 @@ export function LoginForm() {
             <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
           </div>
         </div>
-
-        <Button type="button" variant="outline" className="w-full bg-transparent">
+       <div className="flex w-full gap-2">
+            <Button type="button" variant="outline" className="w-1/2 bg-transparent hover:bg-red-600">
           Google Sign In
         </Button>
+        <Button type="button" variant="outline" className="w-1/2 bg-transparent hover:bg-yellow-600">
+            Guest Account
+        </Button>
+       </div>
 
         <p className="text-center text-sm text-muted-foreground">
           Don't have an account?{" "}
