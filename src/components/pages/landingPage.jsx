@@ -1,8 +1,13 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import ThemeToggleButton from "../ui/theme-toggle-button"
+"use client";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import ThemeToggleButton from "../ui/theme-toggle-button";
+import { useContext } from "react";
+import MyContext from "@/context/ThemeProvider";
 
 export function LandingPage() {
+  const context = useContext(MyContext);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Navigation */}
@@ -12,18 +17,38 @@ export function LandingPage() {
             FF-ESP-ZONE
           </div>
 
-          <div className="flex gap-4">
-            <ThemeToggleButton
-                variant="circle-blur"
-                
-                />
-            <Button asChild variant="outline" >
-              <Link href="/login" className="hover:bg-yellow-600 ">Login</Link>
-            </Button>
+          <div className="flex items-center gap-4">
+            <ThemeToggleButton variant="circle-blur" />
 
-            <Button asChild>
-              <Link href="/signup">Get Started</Link>
-            </Button>
+            {context?.user ? (
+              <>
+                <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+                  {context?.user.username.charAt(0).toUpperCase()}
+                </div>
+
+                <div className="flex flex-col leading-tight">
+                  <span className="text-sm font-medium">
+                    {context?.user.username}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    UID: {context?.user.ffUid}
+                  </span>
+                </div>
+              </>
+            ) : (
+              // ❌ Logged-out UI
+              <>
+                <Button asChild variant="outline">
+                  <Link href="/login" className="hover:bg-yellow-600">
+                    Login
+                  </Link>
+                </Button>
+
+                <Button asChild>
+                  <Link href="/signup">Get Started</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -42,17 +67,32 @@ export function LandingPage() {
           </h1>
 
           <p className="mb-10 text-balance text-xl text-muted-foreground md:text-2xl">
-            Join tournaments, recruit elite teammates, and climb the competitive ladder
+            Join tournaments, recruit elite teammates, and climb the competitive
+            ladder
           </p>
 
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
-            <Button asChild size="lg" className="shadow-lg shadow-primary/20">
-              <Link href="/signup">Start Your Journey</Link>
-            </Button>
+            {context?.user ? (
+              
+              <Button asChild size="lg" className="shadow-lg shadow-primary/20">
+                <Link href="/dashboard">Go to Dashboard</Link>
+              </Button>
+            ) : (
+              
+              <>
+                <Button
+                  asChild
+                  size="lg"
+                  className="shadow-lg shadow-primary/20"
+                >
+                  <Link href="/signup">Start Your Journey</Link>
+                </Button>
 
-            <Button asChild variant="outline" size="lg">
-              <Link href="/login">Sign In</Link>
-            </Button>
+                <Button asChild variant="outline" size="lg">
+                  <Link href="/login">Sign In</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -60,13 +100,16 @@ export function LandingPage() {
       {/* Features */}
       <section className="bg-muted/40 px-4 py-20">
         <div className="mx-auto max-w-6xl">
-          <h2 className="mb-16 text-center text-4xl font-bold">Why FF-ESP-ZONE?</h2>
+          <h2 className="mb-16 text-center text-4xl font-bold">
+            Why FF-ESP-ZONE?
+          </h2>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[
               {
                 title: "Free Tournaments",
-                description: "Compete in BR and CS tournaments with zero entry fee",
+                description:
+                  "Compete in BR and CS tournaments with zero entry fee",
               },
               {
                 title: "Paid Tournaments",
@@ -189,7 +232,10 @@ export function LandingPage() {
             </div>
 
             {[
-              { title: "Product", links: ["Tournaments", "Recruitment", "Chat"] },
+              {
+                title: "Product",
+                links: ["Tournaments", "Recruitment", "Chat"],
+              },
               { title: "Company", links: ["About", "Blog", "Contact"] },
               { title: "Legal", links: ["Privacy", "Terms", "Rules"] },
             ].map((col) => (
@@ -217,5 +263,5 @@ export function LandingPage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }

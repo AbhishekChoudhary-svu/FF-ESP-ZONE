@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { signInWithPopup } from "firebase/auth"
+import { auth, googleProvider } from "@/lib/firebase"
 
 export function SignupForm() {
   const router = useRouter()
@@ -63,6 +65,34 @@ export function SignupForm() {
       setLoading(false)
     }
   }
+
+  const handleGoogleLogin = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider)
+    const user = result.user
+
+    
+    const idToken = await user.getIdToken(true)
+
+
+    const res = await fetch("/api/auth/googleAuth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) throw new Error(data.error)
+
+    // ✅ Redirect
+    window.location.href = "/dashboard"
+  } catch (err) {
+    console.error(err)
+    alert("Google login failed")
+  }
+}
+
 
   return (
     <Card className="p-6 border-border">
@@ -146,9 +176,15 @@ export function SignupForm() {
         </div>
 
         <div className="flex w-full gap-2">
-          <Button type="button" variant="outline" className="w-1/2">
-            Google Sign In
+                    <Button
+            type="button"
+            variant="outline"
+            className="w-1/2"
+            onClick={handleGoogleLogin}
+          >
+            Continue with Google
           </Button>
+
           <Button type="button" variant="outline" className="w-1/2">
             Guest Account
           </Button>

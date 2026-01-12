@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation"
 
 export function DashboardLayout({ user }) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState("free-tournaments")
+  const [activeTab, setActiveTab] = useState("recruitment")
   const [showEditProfile, setShowEditProfile] = useState(false)
   const [showCreateTournament, setShowCreateTournament] = useState(false)
 
@@ -39,21 +39,23 @@ export function DashboardLayout({ user }) {
 
 
   const tabs = [
+    { id: "recruitment", label: "Player/Team Recruitment", icon: "👥" },
     { id: "free-tournaments", label: "Free Tournaments", icon: "🎮" },
     { id: "paid-tournaments", label: "Paid Tournaments", icon: "💰" },
-    { id: "recruitment", label: "Player Recruitment", icon: "👥" },
+    
     { id: "events", label: "Official Events", icon: "🏆" },
     { id: "chat", label: "World Chat", icon: "💬" },
   ]
 
   const renderTab = () => {
     switch (activeTab) {
+       case "recruitment":
+        return <PlayerRecruitmentTab />
       case "free-tournaments":
         return <FreeTournamentsTab onCreateClick={() => setShowCreateTournament(true)} />
       case "paid-tournaments":
         return <PaidTournamentsTab onCreateClick={() => setShowCreateTournament(true)} />
-      case "recruitment":
-        return <PlayerRecruitmentTab />
+     
       case "events":
         return <OfficialEventsTab />
       case "chat":
@@ -98,7 +100,7 @@ export function DashboardLayout({ user }) {
         {/* Tabs Navigation */}
         {!showEditProfile && !showCreateTournament && (
           <>
-            <div className="flex flex-wrap gap-2 mb-8 overflow-x-auto pb-2">
+            <div className="grid grid-cols-5 gap-2 mb-8 overflow-x-auto pb-2">
               {tabs.map((tab) => (
                 <Button
                   key={tab.id}

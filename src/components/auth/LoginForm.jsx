@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
+import { signInWithPopup } from "firebase/auth"
+import { auth, googleProvider } from "@/lib/firebase"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -44,6 +46,32 @@ const handleSubmit = async (e) => {
     setError("An unexpected error occurred")
   } finally {
     setLoading(false)
+  }
+}
+ const handleGoogleLogin = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider)
+    const user = result.user
+
+    
+    const idToken = await user.getIdToken(true)
+
+
+    const res = await fetch("/api/auth/googleAuth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) throw new Error(data.error)
+
+    
+    window.location.href = "/dashboard"
+  } catch (err) {
+    console.error(err)
+    alert("Google login failed")
   }
 }
 
@@ -92,9 +120,14 @@ const handleSubmit = async (e) => {
           </div>
         </div>
        <div className="flex w-full gap-2">
-            <Button type="button" variant="outline" className="w-1/2 bg-transparent hover:bg-red-600">
-          Google Sign In
-        </Button>
+           <Button
+            type="button"
+            variant="outline"
+            className="w-1/2"
+            onClick={handleGoogleLogin}
+          >
+            Continue with Google
+          </Button>
         <Button type="button" variant="outline" className="w-1/2 bg-transparent hover:bg-yellow-600">
             Guest Account
         </Button>
