@@ -1,4 +1,4 @@
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 
 const teamSchema = new mongoose.Schema(
   {
@@ -15,7 +15,7 @@ const teamSchema = new mongoose.Schema(
       required: true,
       unique: true,
       uppercase: true,
-      maxlength: 5, // e.g. TSM, FNX
+      maxlength: 5,
     },
 
     logo: {
@@ -29,19 +29,16 @@ const teamSchema = new mongoose.Schema(
       required: true,
     },
 
-    players: {
-      type: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Player",
-        },
-      ],
-      validate: {
-        validator: function (val) {
-          return val.length <= 6
-        },
-        message: "A team can have maximum 6 players",
+    players: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Player",
       },
+    ],
+
+    maxPlayers: {
+      type: Number,
+      default: 6,
     },
 
     region: {
@@ -60,16 +57,6 @@ const teamSchema = new mongoose.Schema(
       default: "Amateur",
     },
 
-    tournamentsPlayed: {
-      type: Number,
-      default: 0,
-    },
-
-    tournamentsWon: {
-      type: Number,
-      default: 0,
-    },
-
     status: {
       type: String,
       enum: ["active", "inactive", "disbanded"],
@@ -83,7 +70,15 @@ const teamSchema = new mongoose.Schema(
     },
   },
   { timestamps: true }
-)
+);
+
+// Safety: max 6 players
+teamSchema.pre("save", function (next) {
+  if (this.players.length > this.maxPlayers) {
+    return next(new Error("Team player limit exceeded"));
+  }
+  next();
+});
 
 export const Team =
-  mongoose.models.Team || mongoose.model("Team", teamSchema)
+  mongoose.models.Team || mongoose.model("Team", teamSchema);

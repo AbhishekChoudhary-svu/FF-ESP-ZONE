@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -105,59 +105,6 @@ export function UserProfile() {
     }
   };
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-
-    if (!avatar) {
-      alert("Avatar is required");
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/players/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          userId: context?.user?.id,
-          avatar, // Cloudinary URL
-          inGameRole: role,
-          isCaptain,
-          isActive,
-          clipPhotos, // Cloudinary URLs array
-          clipVideo, // Cloudinary URL or null
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message || "Failed to register player");
-        return;
-      }
-
-      // ✅ SUCCESS
-      console.log("Player registered:", data.player);
-
-      // reset state
-      setAvatar(null);
-      setAvatarPreview(null);
-      setClipPhotos([]);
-      setClipPhotoPreviews([]);
-      setClipVideo(null);
-      setClipVideoPreview(null);
-      setIsCaptain(false);
-      setIsActive(false);
-      setRole("Rusher");
-
-      setOpen(false);
-    } catch (err) {
-      console.error("Register error:", err);
-      alert("Something went wrong");
-    }
-  };
 
   const handleDeleteAvatar = async () => {
     if (!avatar) return;
@@ -215,6 +162,70 @@ export function UserProfile() {
     setDetailOpen(true);
   };
 
+  const hasPlayer = Boolean(context?.player?._id);
+
+  useEffect(() => {
+    if (hasPlayer) {
+      setRole(context.player.inGameRole || "Rusher");
+      setIsCaptain(context.player.isCaptain || false);
+      setIsActive(context.player.isActive || false);
+      setAvatar(context.player.avatar || null);
+      setAvatarPreview(context.player.avatar || null);
+      setClipPhotos(context.player.clipPhotos || []);
+      setClipPhotoPreviews(context.player.clipPhotos || []);
+      setClipVideo(context.player.clipVideo || null);
+      setClipVideoPreview(context.player.clipVideo || null);
+    }
+  }, [hasPlayer]);
+
+  const handleSubmitPlayer = async (e) => {
+  e.preventDefault();
+
+  if (!avatar) {
+    alert("Avatar is required");
+    return;
+  }
+
+  const payload = {
+    avatar,
+    inGameRole: role,
+    isCaptain,
+    isActive,
+    clipPhotos,
+    clipVideo,
+  };
+
+  try {
+    const res = await fetch(`/api/players/${context.user.id}`, {
+      method: hasPlayer ? "PATCH" : "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(payload), 
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message || "Operation failed");
+      return;
+    }
+
+    console.log("Player saved:", data.player);
+
+    setOpen1(false);
+
+    // refresh context
+    await context.fetchUser();
+    await context.fetchActivePlayers();
+  } catch (err) {
+    console.error("Player submit error:", err);
+    alert("Something went wrong");
+  }
+};
+
+
   return (
     <>
       <Card className="bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 p-8 backdrop-blur-md">
@@ -224,7 +235,10 @@ export function UserProfile() {
             <div className="flex gap-6">
               <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center  text-3xl font-bold text-white shadow-lg">
                 <img
-                  src={context?.player?.avatar || context?.user?.username?.charAt(0)}
+                  src={
+                    context?.player?.avatar ||
+                    context?.user?.username?.charAt(0)
+                  }
                   className="rounded-xl"
                   alt={""}
                 />
@@ -302,20 +316,20 @@ export function UserProfile() {
               <div>
                 <p className="text-sm text-foreground/60">Secondary Role</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.inGameRole}
+                  {context?.player?.inGameRole || "N/A"}
                 </p>
               </div>
 
               <div>
                 <p className="text-sm text-foreground/60">Likes</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.likes}
+                  {context?.player?.likes ||  "0"}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-foreground/60">Captain/IGL</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.isCaptain === true ? "Yes" : "No"}
+                  {context?.player?.isCaptain === true ? "Yes" : "No" }
                 </p>
               </div>
               <div>
@@ -329,35 +343,35 @@ export function UserProfile() {
               <div>
                 <p className="text-sm text-foreground/60">Match Played</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.stats?.matchesPlayed}
+                  {context?.player?.stats?.matchesPlayed  || "0"}
                 </p>
               </div>
 
               <div>
                 <p className="text-sm text-foreground/60">Win Rate</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.stats?.winRate}
+                  {context?.player?.stats?.winRate  || "0"}
                 </p>
               </div>
 
               <div>
                 <p className="text-sm text-foreground/60">Kills</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.stats?.kills}
+                  {context?.player?.stats?.kills  || "0"}
                 </p>
               </div>
 
               <div>
                 <p className="text-sm text-foreground/60">Assists</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.stats?.assists}
+                  {context?.player?.stats?.assists  || "0"}
                 </p>
               </div>
 
               <div>
                 <p className="text-sm text-foreground/60">Deaths</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.stats?.deaths}
+                  {context?.player?.stats?.deaths  || "0"}
                 </p>
               </div>
             </div>
@@ -384,16 +398,18 @@ export function UserProfile() {
 
             <Dialog open={open1} onOpenChange={setOpen1}>
               <DialogTrigger asChild>
-                <Button variant="secondary">Register Player</Button>
+                <Button variant="secondary">
+                  {hasPlayer ? "Edit Player Details" : "Register Player"}
+                </Button>
               </DialogTrigger>
 
               <DialogContent className="max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>Register Player Profile</DialogTitle>
+                  <DialogTitle> {hasPlayer ? "Edit Player Details" : "Register Player Profile"}</DialogTitle>
                 </DialogHeader>
 
                 <form
-                  onSubmit={handleRegister}
+                  onSubmit={handleSubmitPlayer}
                   className="space-y-4 p-4 bg-zinc-950 rounded-xl"
                 >
                   {/* Avatar */}
@@ -600,7 +616,7 @@ export function UserProfile() {
                   </div>
 
                   <Button type="submit" className="w-full">
-                    Create Player
+                    {hasPlayer ? "Update Player" : "Create Player"}
                   </Button>
                 </form>
               </DialogContent>
