@@ -39,6 +39,7 @@ export async function GET(req) {
     return NextResponse.json({
       success: true,
       user: {
+        id: user._id,
         uid: user.uid,
         email: user.email,
         emailVerified: user.emailVerified,
