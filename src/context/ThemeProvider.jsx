@@ -10,7 +10,9 @@ export const ThemeProvider = ({ children }) => {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [player, setPlayer] = useState(null);
+  const [team, setTeam] = useState(null);
   const [activePlayer, setActivePlayer] = useState(null);
+  const [activeTeam, setActiveTeam] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchUser = async () => {
@@ -35,7 +37,7 @@ export const ThemeProvider = ({ children }) => {
     }
   };
 
-const fetchPlayer = async (userId) => {
+  const fetchPlayer = async (userId) => {
     try {
       const res = await fetch(`/api/players/${userId}`, {
         method: "GET",
@@ -54,13 +56,47 @@ const fetchPlayer = async (userId) => {
       setPlayer(null);
     }
   };
+  const fetchTeam = async (playerId) => {
+    try {
+      const res = await fetch(`/api/teams/${playerId}`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        setTeam(null);
+        return;
+      }
+
+      const data = await res.json();
+      setTeam(data.team || null);
+    } catch (err) {
+      console.error("FETCH TEAM ERROR:", err);
+      setTeam(null);
+    }
+  };
 
   const fetchActivePlayers = async () => {
-  const res = await fetch("/api/players/allPlayers");
-  const data = await res.json();
+    const res = await fetch("/api/players/allPlayers");
+    const data = await res.json();
 
-  if (data.success) {
-    setActivePlayer(data.players);
+    if (data.success) {
+      setActivePlayer(data.players);
+    }
+  };
+ const fetchActiveTeams = async () => {
+  try {
+    const res = await fetch("/api/teams/allTeams"); 
+    const data = await res.json();
+
+    if (data.success) {
+      setActiveTeam(data.teams);
+    } else {
+      setActiveTeam([]);
+    }
+  } catch (err) {
+    console.error("FETCH ACTIVE TEAMS ERROR:", err);
+    setActiveTeam([]);
   }
 };
 
@@ -68,6 +104,7 @@ const fetchPlayer = async (userId) => {
   useEffect(() => {
     fetchUser();
     fetchActivePlayers();
+    fetchActiveTeams();
   }, []);
 
   useEffect(() => {
@@ -76,12 +113,17 @@ const fetchPlayer = async (userId) => {
     }
   }, [user]);
 
+   useEffect(() => {
+    if (player?._id) {
+      fetchTeam(player._id);
+    }
+  }, [player]);
+
   useEffect(() => {
     if (user !== null) {
       setLoading(false);
     }
-  }, [user, player]);
-
+  }, [user, player, team]);
 
   let values = {
     user,
@@ -91,7 +133,9 @@ const fetchPlayer = async (userId) => {
     fetchPlayer,
     activePlayer,
     fetchActivePlayers,
-
+    team,
+    fetchTeam,
+    fetchActiveTeams,
   };
 
   return (

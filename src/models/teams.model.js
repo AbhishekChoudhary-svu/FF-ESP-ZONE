@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const teamSchema = new mongoose.Schema(
   {
-    name: {
+    teamName: {
       type: String,
       required: true,
       unique: true,
@@ -23,7 +23,7 @@ const teamSchema = new mongoose.Schema(
       default: "",
     },
 
-    captain: {
+    teamCaptain: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Player",
       required: true,

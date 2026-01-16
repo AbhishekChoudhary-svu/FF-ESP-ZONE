@@ -10,21 +10,18 @@ export async function POST(req, { params }) {
     const { playerid } = await params;
     const body = await req.json();
 
-    const { name, tag, logo, region, tier } = body;
+    const { teamName, tag, logo, status, tier } = body;
 
-    if (!playerid || !name || !tag) {
+    if (!playerid || !teamName || !tag) {
       return NextResponse.json(
-        { message: "playerId, name and tag are required" },
+        { message: "playerId, teamName and tag are required" },
         { status: 400 }
       );
     }
 
     const player = await Player.findById(playerid);
     if (!player) {
-      return NextResponse.json(
-        { message: "Player not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: "Player not found" }, { status: 404 });
     }
 
     if (player.teamId) {
@@ -35,12 +32,13 @@ export async function POST(req, { params }) {
     }
 
     const team = await Team.create({
-      name,
+      teamName,
       tag,
       logo: logo || "",
-      captain: player._id,
+      teamCaptain: player._id,
       players: [player._id],
-      region: region || "India",
+      region: "India",
+      status: status || "active",
       tier: tier || "Amateur",
       createdBy: player.userId,
     });
@@ -50,10 +48,7 @@ export async function POST(req, { params }) {
     player.isCaptain = true;
     await player.save();
 
-    return NextResponse.json(
-      { success: true, team },
-      { status: 201 }
-    );
+    return NextResponse.json({ success: true, team }, { status: 201 });
   } catch (error) {
     console.error("CREATE TEAM ERROR:", error);
     return NextResponse.json(
@@ -62,7 +57,6 @@ export async function POST(req, { params }) {
     );
   }
 }
-
 
 export async function PATCH(req, { params }) {
   try {
@@ -87,11 +81,11 @@ export async function PATCH(req, { params }) {
     }
 
     const updates = {
-      name: body.name,
+      teamName: body.teamName,
       logo: body.logo,
       tier: body.tier,
-      region: body.region,
       status: body.status,
+      tag: body.tag,
     };
 
     Object.keys(updates).forEach(
@@ -104,10 +98,7 @@ export async function PATCH(req, { params }) {
       { new: true }
     );
 
-    return NextResponse.json(
-      { success: true, team },
-      { status: 200 }
-    );
+    return NextResponse.json({ success: true, team }, { status: 200 });
   } catch (error) {
     console.error("UPDATE TEAM ERROR:", error);
     return NextResponse.json(
@@ -116,6 +107,7 @@ export async function PATCH(req, { params }) {
     );
   }
 }
+
 
 export async function GET(req, { params }) {
   try {
@@ -131,17 +123,19 @@ export async function GET(req, { params }) {
       );
     }
 
-    const team = await Team.findById(player.teamId)
-      .populate({
-        path: "players",
-        populate: { path: "userId" },
-      })
-      .populate("captain");
+      const team = await Team.findById(player.teamId)
+    .populate({
+      path: "players",       
+      populate: { path: "userId" }, 
+    })
+    .populate({
+      path: "teamCaptain", 
+      populate: { path: "userId" }, 
+    })
+    .populate("createdBy");
 
-    return NextResponse.json(
-      { success: true, team },
-      { status: 200 }
-    );
+
+    return NextResponse.json({ success: true, team }, { status: 200 });
   } catch (error) {
     console.error("GET TEAM ERROR:", error);
     return NextResponse.json(

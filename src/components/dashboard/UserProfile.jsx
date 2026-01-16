@@ -22,13 +22,16 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CloudUpload, X, Play, User } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 export function UserProfile() {
   const context = useContext(MyContext);
   const [open, setOpen] = useState(false);
   const [open1, setOpen1] = useState(false);
+  const [openTeam, setOpenTeam] = useState(false);
 
   const [detailOpen, setDetailOpen] = useState(false);
+  const [teamDetailOpen, setTeamDetailOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
   const [role, setRole] = useState("Rusher");
@@ -43,6 +46,15 @@ export function UserProfile() {
 
   const [clipVideo, setClipVideo] = useState(null);
   const [clipVideoPreview, setClipVideoPreview] = useState(null);
+
+  const [logo, setLogo] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+
+  const [teamName, setTeamName] = useState("");
+  const [tag, setTag] = useState("");
+
+  const [status, setStatus] = useState("active");
+  const [tier, setTier] = useState("Amateur");
 
   const handleAvatarChange = async (file) => {
     setAvatarPreview(URL.createObjectURL(file)); // instant preview
@@ -105,6 +117,31 @@ export function UserProfile() {
     }
   };
 
+  const handleLogoChange = async (file) => {
+    // instant preview
+    setLogoPreview(URL.createObjectURL(file));
+
+    const formData = new FormData();
+    formData.append("logo", file);
+
+    try {
+      const res = await fetch("/api/uploads/logo", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Logo upload failed");
+        return;
+      }
+
+      setLogo(data.logoUrl);
+    } catch (err) {
+      console.error("Logo upload error:", err);
+    }
+  };
 
   const handleDeleteAvatar = async () => {
     if (!avatar) return;
@@ -157,12 +194,30 @@ export function UserProfile() {
     }
   };
 
+  const removeLogo = async () => {
+    if (!logo) return;
+
+    try {
+      await fetch("/api/uploads/logo", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ logoUrl: logo }),
+      });
+
+      setLogo(null);
+      setLogoPreview(null);
+    } catch (err) {
+      console.error("Delete logo error:", err);
+    }
+  };
+
   const openDetails = (player) => {
     setSelectedPlayer(player);
     setDetailOpen(true);
   };
 
   const hasPlayer = Boolean(context?.player?._id);
+  const hasTeam = Boolean(context?.team?._id);
 
   useEffect(() => {
     if (hasPlayer) {
@@ -178,53 +233,92 @@ export function UserProfile() {
     }
   }, [hasPlayer]);
 
+  useEffect(() => {
+    if (hasTeam) {
+      setTeamName(context.team.teamName || "");
+      setTag(context.team.tag || "");
+      setLogo(context.team.logo || "");
+      setLogoPreview(context.team.logo || "");
+      setStatus(context.team.status || "active");
+      setTier(context.team.tier || "Amateur");
+    }
+  }, [hasTeam]);
+
   const handleSubmitPlayer = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!avatar) {
-    alert("Avatar is required");
-    return;
-  }
-
-  const payload = {
-    avatar,
-    inGameRole: role,
-    isCaptain,
-    isActive,
-    clipPhotos,
-    clipVideo,
-  };
-
-  try {
-    const res = await fetch(`/api/players/${context.user.id}`, {
-      method: hasPlayer ? "PATCH" : "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify(payload), 
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.message || "Operation failed");
+    if (!avatar) {
+      alert("Avatar is required");
       return;
     }
 
-    console.log("Player saved:", data.player);
+    const payload = {
+      avatar,
+      inGameRole: role,
+      isCaptain,
+      isActive,
+      clipPhotos,
+      clipVideo,
+    };
 
-    setOpen1(false);
+    try {
+      const res = await fetch(`/api/players/${context.user.id}`, {
+        method: hasPlayer ? "PATCH" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
 
-    // refresh context
-    await context.fetchUser();
-    await context.fetchActivePlayers();
-  } catch (err) {
-    console.error("Player submit error:", err);
-    alert("Something went wrong");
-  }
-};
+      const data = await res.json();
 
+      if (!res.ok) {
+        alert(data.message || "Operation failed");
+        return;
+      }
+
+      console.log("Player saved:", data.player);
+
+      setOpen1(false);
+
+      // refresh context
+      await context.fetchUser();
+      await context.fetchActivePlayers();
+    } catch (err) {
+      console.error("Player submit error:", err);
+      alert("Something went wrong");
+    }
+  };
+
+  const handleSubmitTeam = async (e) => {
+    e.preventDefault();
+
+    const payload = {
+      teamName,
+      tag,
+      logo,
+      status,
+      tier,
+    };
+
+    const res = await fetch(
+      hasTeam
+        ? `/api/teams/${context?.player?._id}`
+        : `/api/teams/${context?.player?._id}`,
+      {
+        method: hasTeam ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      setOpenTeam(false);
+    }
+  };
 
   return (
     <>
@@ -310,7 +404,9 @@ export function UserProfile() {
             <div className="grid grid-cols-5 gap-6">
               <div>
                 <p className="text-sm text-foreground/60">Team Name</p>
-                <p className="text-lg font-semibold">{"Not Joined Yet"}</p>
+                <p className="text-lg font-semibold">
+                  {context?.team?.teamName || "Not Joined Yet"}
+                </p>
               </div>
 
               <div>
@@ -323,13 +419,13 @@ export function UserProfile() {
               <div>
                 <p className="text-sm text-foreground/60">Likes</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.likes ||  "0"}
+                  {context?.player?.likes || "0"}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-foreground/60">Captain/IGL</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.isCaptain === true ? "Yes" : "No" }
+                  {context?.player?.isCaptain === true ? "Yes" : "No"}
                 </p>
               </div>
               <div>
@@ -343,35 +439,35 @@ export function UserProfile() {
               <div>
                 <p className="text-sm text-foreground/60">Match Played</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.stats?.matchesPlayed  || "0"}
+                  {context?.player?.stats?.matchesPlayed || "0"}
                 </p>
               </div>
 
               <div>
                 <p className="text-sm text-foreground/60">Win Rate</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.stats?.winRate  || "0"}
+                  {context?.player?.stats?.winRate || "0"}
                 </p>
               </div>
 
               <div>
                 <p className="text-sm text-foreground/60">Kills</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.stats?.kills  || "0"}
+                  {context?.player?.stats?.kills || "0"}
                 </p>
               </div>
 
               <div>
                 <p className="text-sm text-foreground/60">Assists</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.stats?.assists  || "0"}
+                  {context?.player?.stats?.assists || "0"}
                 </p>
               </div>
 
               <div>
                 <p className="text-sm text-foreground/60">Deaths</p>
                 <p className="text-lg font-semibold">
-                  {context?.player?.stats?.deaths  || "0"}
+                  {context?.player?.stats?.deaths || "0"}
                 </p>
               </div>
             </div>
@@ -405,7 +501,12 @@ export function UserProfile() {
 
               <DialogContent className="max-w-lg">
                 <DialogHeader>
-                  <DialogTitle> {hasPlayer ? "Edit Player Details" : "Register Player Profile"}</DialogTitle>
+                  <DialogTitle>
+                    {" "}
+                    {hasPlayer
+                      ? "Edit Player Details"
+                      : "Register Player Profile"}
+                  </DialogTitle>
                 </DialogHeader>
 
                 <form
@@ -670,6 +771,269 @@ export function UserProfile() {
                       )}
                     </div>
                   </>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={openTeam} onOpenChange={setOpenTeam}>
+              <DialogTrigger asChild>
+                <Button variant="secondary">
+                  {hasTeam ? "Edit Team" : "Create Team"}
+                </Button>
+              </DialogTrigger>
+
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>
+                    {hasTeam ? "Edit Team Details" : "Create Team"}
+                  </DialogTitle>
+                </DialogHeader>
+
+                <form
+                  onSubmit={handleSubmitTeam}
+                  className="space-y-4 p-4 bg-zinc-950 rounded-xl"
+                >
+                  {/* Team Logo */}
+                  <div className="space-y-3">
+                    <Label className="font-semibold">Team Logo</Label>
+
+                    <div className="flex items-center gap-4">
+                      <div className="relative flex items-center justify-center w-28 h-28 rounded-full border-2 border-dashed border-muted-foreground/40 bg-muted/20 cursor-pointer">
+                        {!logoPreview ? (
+                          <p className="text-xs text-muted-foreground">
+                            Upload Logo
+                          </p>
+                        ) : (
+                          <img
+                            src={logoPreview}
+                            className="w-full h-full rounded-full object-cover"
+                            alt="Team Logo"
+                          />
+                        )}
+
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) =>
+                            e.target.files &&
+                            handleLogoChange(e.target.files[0])
+                          }
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                        />
+
+                        {logoPreview && (
+                          <button
+                            type="button"
+                            onClick={removeLogo}
+                            className="absolute -top-2 -right-2 bg-black text-white rounded-full p-1"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="text-xs text-muted-foreground">
+                        PNG / JPG
+                        <br />
+                        Square recommended
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Team Name */}
+                  <div className="space-y-2">
+                    <Label>Team Name</Label>
+                    <Input
+                      value={teamName}
+                      onChange={(e) => setTeamName(e.target.value)}
+                      placeholder="Enter team name"
+                      required
+                    />
+                  </div>
+
+                  {/* Team Tag */}
+                  <div className="space-y-2">
+                    <Label>Team Tag</Label>
+                    <Input
+                      value={tag}
+                      onChange={(e) => setTag(e.target.value.toUpperCase())}
+                      maxLength={5}
+                      placeholder="TSM"
+                      required
+                    />
+                  </div>
+
+                  {/* Status */}
+                  <div className="space-y-2">
+                    <Label>Team Status</Label>
+                    <Select value={status} onValueChange={setStatus}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="disbanded">Disbanded</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {/* Tier */}
+                  <div className="space-y-2">
+                    <Label>Tier</Label>
+                    <Select value={tier} onValueChange={setTier}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Amateur">Amateur</SelectItem>
+                        <SelectItem value="Semi-Pro">Semi-Pro</SelectItem>
+                        <SelectItem value="Pro">Pro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button type="submit" className="w-full">
+                    {hasTeam ? "Update Team" : "Create Team"}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={teamDetailOpen} onOpenChange={setTeamDetailOpen}>
+              <DialogTrigger asChild>
+                <Button variant="secondary">Team Details</Button>
+              </DialogTrigger>
+
+              <DialogContent className="max-w-2xl">
+                {context?.team ? (
+                  <>
+                    <DialogHeader>
+                      <DialogTitle>
+                        {context.team.teamName} — Team Info
+                      </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                      {/* Team Logo */}
+                      <div className="grid grid-cols-3">
+                        {context.team.logo ? (
+                          <img
+                            src={context.team.logo}
+                            alt={context.team.teamName}
+                            className="w-32 h-32 rounded-full object-cover border-2 border-primary"
+                          />
+                        ) : (
+                          <div className="w-32 h-32 rounded-full bg-gray-700 flex items-center justify-center text-white text-xl">
+                            {context.team.teamName?.charAt(0) || "T"}
+                          </div>
+                        )}
+                        <div className="flex flex-col gap-3">
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Team Name
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {context.team.teamName}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Team Tag
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {context.team.tag}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Region
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {context.team.region}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Tier
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {context.team.tier}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3">
+                        {/* Captain */}
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Team Captain
+                          </p>
+                          <p className="font-semibold text-lg">
+                            {context.team.teamCaptain?.userId?.username ||
+                              "Not Assigned"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Team Status
+                          </p>
+                          <p className="font-semibold text-lg">
+                            {context.team.status.charAt(0).toUpperCase()  + context.team.status.slice(1) || "InActive"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Created By
+                          </p>
+                          <p className="font-semibold text-lg">
+                            {context.team.createdBy.username}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Members List */}
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Team Members
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {context.team.players &&
+                          context.team.players.length > 0 ? (
+                            context.team.players.map((member) => (
+                              <div
+                                key={member._id}
+                                className="flex items-center gap-2 p-2  rounded"
+                              >
+                                <img
+                                  src={member.avatar || "/default-avatar.png"}
+                                  alt={member.userId.username}
+                                  className="w-10 h-10 rounded-full object-cover"
+                                />
+                                <div className="flex flex-col ">
+
+                                <span className="text-sm">{member.userId.username}</span>
+                                <span className="text-xs">ID :{member.userId.ffUid}</span>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-muted-foreground">
+                              No members yet
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-center text-muted-foreground">
+                    No team details available.
+                  </p>
                 )}
               </DialogContent>
             </Dialog>
