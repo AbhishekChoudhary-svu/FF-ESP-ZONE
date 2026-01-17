@@ -23,12 +23,16 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { CloudUpload, X, Play, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { TeamRequestDialog } from "../ui/TeamRequestDialog";
 
 export function UserProfile() {
   const context = useContext(MyContext);
   const [open, setOpen] = useState(false);
   const [open1, setOpen1] = useState(false);
   const [openTeam, setOpenTeam] = useState(false);
+
+  const [open3, setOpen3] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [teamDetailOpen, setTeamDetailOpen] = useState(false);
@@ -215,6 +219,10 @@ export function UserProfile() {
     setSelectedPlayer(player);
     setDetailOpen(true);
   };
+  const openRequest = (req) => {
+    setSelectedRequest(req);
+    setOpen3(true);
+  };
 
   const hasPlayer = Boolean(context?.player?._id);
   const hasTeam = Boolean(context?.team?._id);
@@ -310,7 +318,7 @@ export function UserProfile() {
         method: hasTeam ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      }
+      },
     );
 
     const data = await res.json();
@@ -983,7 +991,8 @@ export function UserProfile() {
                             Team Status
                           </p>
                           <p className="font-semibold text-lg">
-                            {context.team.status.charAt(0).toUpperCase()  + context.team.status.slice(1) || "InActive"}
+                            {context.team.status.charAt(0).toUpperCase() +
+                              context.team.status.slice(1) || "InActive"}
                           </p>
                         </div>
                         <div>
@@ -1015,9 +1024,12 @@ export function UserProfile() {
                                   className="w-10 h-10 rounded-full object-cover"
                                 />
                                 <div className="flex flex-col ">
-
-                                <span className="text-sm">{member.userId.username}</span>
-                                <span className="text-xs">ID :{member.userId.ffUid}</span>
+                                  <span className="text-sm">
+                                    {member.userId.username}
+                                  </span>
+                                  <span className="text-xs">
+                                    ID :{member.userId.ffUid}
+                                  </span>
                                 </div>
                               </div>
                             ))
@@ -1037,6 +1049,15 @@ export function UserProfile() {
                 )}
               </DialogContent>
             </Dialog>
+
+            <TeamRequestDialog
+              open={open3}
+              setOpen={setOpen3}
+              request={selectedRequest}
+              isCaptainView={true}
+              onAccept={""}
+              onReject={""}
+            />
           </div>
         </div>
       </Card>

@@ -135,6 +135,7 @@ export const ThemeProvider = ({ children }) => {
     fetchActivePlayers,
     team,
     fetchTeam,
+    activeTeam,
     fetchActiveTeams,
   };
 

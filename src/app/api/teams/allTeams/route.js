@@ -16,7 +16,8 @@ export async function GET(req) {
       .populate({
         path: "teamCaptain",
         populate: { path: "userId", select: "username avatar" },
-      });
+      })
+      .populate("createdBy");
 
     return NextResponse.json({ success: true, teams }, { status: 200 });
   } catch (error) {
