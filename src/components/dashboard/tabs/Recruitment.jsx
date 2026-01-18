@@ -28,7 +28,6 @@ export function PlayerRecruitmentTab() {
 
   const [invitedPlayers, setInvitedPlayers] = useState(new Set());
 
-
   const openTeamDetails = (team) => {
     setSelectedTeam(team);
     setTeamDetailOpen(true);
@@ -487,6 +486,10 @@ export function PlayerRecruitmentTab() {
                   </div>
                 </div>
               </div>
+              <Button className="w-full bg-gradient-to-r from-primary to-accent">
+                {" "}
+                Send Join Request
+              </Button>
             </>
           ) : (
             <p className="text-center text-muted-foreground">

@@ -23,7 +23,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { CloudUpload, X, Play, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { TeamRequestDialog } from "../ui/TeamRequestDialog";
 
 export function UserProfile() {
   const context = useContext(MyContext);
@@ -327,6 +326,65 @@ export function UserProfile() {
       setOpenTeam(false);
     }
   };
+
+  const handleAccept = async (requestId) => {
+  try {
+    const res = await fetch("/api/team-requests/accept", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        requestId,
+        playerId: context.player._id, // IMPORTANT
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.message || "Failed to accept request");
+      return;
+    }
+
+    alert("Request accepted successfully 🎉");
+
+    // 🔄 Refresh data
+    setOpen3(false)
+    context.fetchTeam(context.player._id);
+    context.fetchPlayer(context.user.id);
+    context.fetchPlayerRequests?.(); // if you added this in context
+  } catch (error) {
+    console.error("ACCEPT REQUEST ERROR:", error);
+    alert("Something went wrong");
+  }
+};
+
+
+  const handleReject = async (requestId) => {
+  try {
+    const res = await fetch("/api/team-requests/reject", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ requestId, playerId: context.player._id }),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      setOpen(false)
+      console.log("Request rejected successfully:", data.message);
+    } else {
+      console.error("Failed to reject request:", data.message);
+    }
+  } catch (error) {
+    console.error("Error rejecting request:", error);
+  }
+};
+
 
   return (
     <>
@@ -907,157 +965,286 @@ export function UserProfile() {
               </DialogContent>
             </Dialog>
 
-            <Dialog open={teamDetailOpen} onOpenChange={setTeamDetailOpen}>
-              <DialogTrigger asChild>
-                <Button variant="secondary">Team Details</Button>
-              </DialogTrigger>
+            {context?.team && (
+              <Dialog open={teamDetailOpen} onOpenChange={setTeamDetailOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="secondary">Team Details</Button>
+                </DialogTrigger>
 
-              <DialogContent className="max-w-2xl">
-                {context?.team ? (
-                  <>
-                    <DialogHeader>
-                      <DialogTitle>
-                        {context.team.teamName} — Team Info
-                      </DialogTitle>
-                    </DialogHeader>
+                <DialogContent className="max-w-2xl">
+                  {context?.team ? (
+                    <>
+                      <DialogHeader>
+                        <DialogTitle>
+                          {context.team.teamName} — Team Info
+                        </DialogTitle>
+                      </DialogHeader>
 
-                    <div className="space-y-4">
-                      {/* Team Logo */}
-                      <div className="grid grid-cols-3">
-                        {context.team.logo ? (
-                          <img
-                            src={context.team.logo}
-                            alt={context.team.teamName}
-                            className="w-32 h-32 rounded-full object-cover border-2 border-primary"
-                          />
-                        ) : (
-                          <div className="w-32 h-32 rounded-full bg-gray-700 flex items-center justify-center text-white text-xl">
-                            {context.team.teamName?.charAt(0) || "T"}
-                          </div>
-                        )}
-                        <div className="flex flex-col gap-3">
-                          <div>
-                            <p className="text-sm text-muted-foreground">
-                              Team Name
-                            </p>
-                            <p className="font-semibold text-lg">
-                              {context.team.teamName}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-muted-foreground">
-                              Team Tag
-                            </p>
-                            <p className="font-semibold text-lg">
-                              {context.team.tag}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-3">
-                          <div>
-                            <p className="text-sm text-muted-foreground">
-                              Region
-                            </p>
-                            <p className="font-semibold text-lg">
-                              {context.team.region}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-muted-foreground">
-                              Tier
-                            </p>
-                            <p className="font-semibold text-lg">
-                              {context.team.tier}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3">
-                        {/* Captain */}
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Team Captain
-                          </p>
-                          <p className="font-semibold text-lg">
-                            {context.team.teamCaptain?.userId?.username ||
-                              "Not Assigned"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Team Status
-                          </p>
-                          <p className="font-semibold text-lg">
-                            {context.team.status.charAt(0).toUpperCase() +
-                              context.team.status.slice(1) || "InActive"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Created By
-                          </p>
-                          <p className="font-semibold text-lg">
-                            {context.team.createdBy.username}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Members List */}
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Team Members
-                        </p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {context.team.players &&
-                          context.team.players.length > 0 ? (
-                            context.team.players.map((member) => (
-                              <div
-                                key={member._id}
-                                className="flex items-center gap-2 p-2  rounded"
-                              >
-                                <img
-                                  src={member.avatar || "/default-avatar.png"}
-                                  alt={member.userId.username}
-                                  className="w-10 h-10 rounded-full object-cover"
-                                />
-                                <div className="flex flex-col ">
-                                  <span className="text-sm">
-                                    {member.userId.username}
-                                  </span>
-                                  <span className="text-xs">
-                                    ID :{member.userId.ffUid}
-                                  </span>
-                                </div>
-                              </div>
-                            ))
+                      <div className="space-y-4">
+                        {/* Team Logo */}
+                        <div className="grid grid-cols-3">
+                          {context.team.logo ? (
+                            <img
+                              src={context.team.logo}
+                              alt={context.team.teamName}
+                              className="w-32 h-32 rounded-full object-cover border-2 border-primary"
+                            />
                           ) : (
-                            <p className="text-muted-foreground">
-                              No members yet
-                            </p>
+                            <div className="w-32 h-32 rounded-full bg-gray-700 flex items-center justify-center text-white text-xl">
+                              {context.team.teamName?.charAt(0) || "T"}
+                            </div>
                           )}
+                          <div className="flex flex-col gap-3">
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Team Name
+                              </p>
+                              <p className="font-semibold text-lg">
+                                {context.team.teamName}
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Team Tag
+                              </p>
+                              <p className="font-semibold text-lg">
+                                {context.team.tag}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-3">
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Region
+                              </p>
+                              <p className="font-semibold text-lg">
+                                {context.team.region}
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Tier
+                              </p>
+                              <p className="font-semibold text-lg">
+                                {context.team.tier}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3">
+                          {/* Captain */}
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Team Captain
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {context.team.teamCaptain?.userId?.username ||
+                                "Not Assigned"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Team Status
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {context.team.status.charAt(0).toUpperCase() +
+                                context.team.status.slice(1) || "InActive"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Created By
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {context.team.createdBy.username}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Members List */}
+                        <div>
+                          <div className="flex justify-between">
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Team Members
+                            </p>
+                            <Button
+                              className={"mr-12"}
+                              variant="secondary"
+                              onClick={() => openDetails()}
+                            >
+                              Request
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {context.team.players &&
+                            context.team.players.length > 0 ? (
+                              context.team.players.map((member) => (
+                                <div
+                                  key={member._id}
+                                  className="flex items-center gap-2 p-2  rounded"
+                                >
+                                  <img
+                                    src={member.avatar || "/default-avatar.png"}
+                                    alt={member.userId.username}
+                                    className="w-10 h-10 rounded-full object-cover"
+                                  />
+                                  <div className="flex flex-col ">
+                                    <span className="text-sm">
+                                      {member.userId.username}
+                                    </span>
+                                    <span className="text-xs">
+                                      ID :{member.userId.ffUid}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-muted-foreground">
+                                No members yet
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-center text-muted-foreground">
-                    No team details available.
-                  </p>
-                )}
-              </DialogContent>
-            </Dialog>
+                    </>
+                  ) : (
+                    <p className="text-center text-muted-foreground">
+                      No team details available.
+                    </p>
+                  )}
+                </DialogContent>
+              </Dialog>
+            )}
 
-            <TeamRequestDialog
-              open={open3}
-              setOpen={setOpen3}
-              request={selectedRequest}
-              isCaptainView={true}
-              onAccept={""}
-              onReject={""}
-            />
+            {context?.playerRequests && (
+              <Dialog open={open3} onOpenChange={setOpen3}>
+                <DialogTrigger asChild>
+                  <Button variant="secondary">Application</Button>
+                </DialogTrigger>
+
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Team Requests</DialogTitle>
+                  </DialogHeader>
+
+                  {context.playerRequests.length === 0 ? (
+                    <p className="text-center text-muted-foreground">
+                      No team requests
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {context.playerRequests.map((request) => {
+                        const isInvite = request.type === "invite";
+                        const isPending = request.status === "pending";
+                        const isAccepted = request.status === "accepted";
+                        const isRejected = request.status === "rejected";
+
+                        return (
+                          <div
+                            key={request._id}
+                            className="flex items-center justify-between border rounded-lg p-3"
+                          >
+                            {/* LEFT: TEAM INFO */}
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={
+                                  request.team?.logo || "/team-placeholder.png"
+                                }
+                                alt={request.team?.teamName}
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+
+                              <div>
+                                <p className="font-semibold text-sm">
+                                  {request.team?.teamName}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {request.team?.tag}
+
+                                  {request.type === "invite" && (
+                                    <span className="">
+                                     {" "} •{" "}
+                                      {request.status === "pending" &&
+                                        "Invited you to Join Team"}
+                                      {request.status === "accepted" &&
+                                        "request accepted"}
+                                      {request.status === "rejected" &&
+                                        "request rejected"}
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* RIGHT: ACTION / STATUS */}
+                            <div>
+                              {/* TEAM INVITED PLAYER */}
+                              {isInvite && isPending && (
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700"
+                                    onClick={() => handleAccept(request._id)}
+                                  >
+                                    Accept
+                                  </Button>
+
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleReject(request._id)}
+                                  >
+                                    Reject
+                                  </Button>
+                                </div>
+                              )}
+
+                              {/* PLAYER SENT REQUEST */}
+                              {!isInvite && (
+                                <>
+                                  {isPending && (
+                                    <Badge variant="outline">⏳ Pending</Badge>
+                                  )}
+                                  {isAccepted && (
+                                    <Badge className="bg-green-600">
+                                      ✅ Accepted
+                                    </Badge>
+                                  )}
+                                  {isRejected && (
+                                    <Badge variant="destructive">
+                                      ❌ Rejected
+                                    </Badge>
+                                  )}
+                                </>
+                              )}
+
+                              {/* INVITE ACCEPTED / REJECTED */}
+                              {isInvite && !isPending && (
+                                <>
+                                  {isAccepted && (
+                                    <Badge className="bg-green-600">
+                                      ✅ Accepted
+                                    </Badge>
+                                  )}
+                                  {isRejected && (
+                                    <Badge variant="destructive">
+                                      ❌ Rejected
+                                    </Badge>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
         </div>
       </Card>
