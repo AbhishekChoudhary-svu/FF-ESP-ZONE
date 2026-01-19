@@ -1,8 +1,11 @@
 import { TeamRequest } from "@/models/teamReq.model"
 import {Team} from "@/models/teams.model"
 import {Player} from "@/models/players.model"
+import dbConnect from "@/lib/dbConnect"
+
 
 export async function POST(req) {
+  await dbConnect()
   const { teamId, playerId, userId } = await req.json()
 
   const team = await Team.findById(teamId)
@@ -10,7 +13,7 @@ export async function POST(req) {
     return Response.json({ success: false, message: "Team not found" })
   }
 
-  // Only captain can invite
+ 
   if (team.teamCaptain.toString() !== userId) {
     return Response.json({ success: false, message: "Not authorized" })
   }

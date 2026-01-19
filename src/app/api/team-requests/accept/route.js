@@ -1,8 +1,12 @@
 import { TeamRequest } from "@/models/teamReq.model"
 import { Team } from "@/models/teams.model"
 import { Player } from "@/models/players.model"
+import dbConnect from "@/lib/dbConnect"
+
 
 export async function PATCH(req) {
+   await dbConnect();
+
   const { requestId, playerId } = await req.json()
 
   const request = await TeamRequest.findById(requestId)
@@ -13,7 +17,7 @@ export async function PATCH(req) {
     return Response.json({ success: false, message: "Invalid request" })
   }
 
-  // 🛑 Player already in a team
+  
   if (request.player.teamId) {
     return Response.json({
       success: false,
@@ -21,8 +25,7 @@ export async function PATCH(req) {
     })
   }
 
-  // ✅ PERMISSION CHECK
-  // Team invited player → only THAT PLAYER can accept
+ 
   if (
     request.type === "invite" &&
     request.player._id.toString() !== playerId
@@ -30,7 +33,6 @@ export async function PATCH(req) {
     return Response.json({ success: false, message: "Unauthorized" })
   }
 
-  // Player requested team → only TEAM CAPTAIN can accept
   if (
     request.type === "request" &&
     request.team.teamCaptain.toString() !== playerId
@@ -38,31 +40,26 @@ export async function PATCH(req) {
     return Response.json({ success: false, message: "Unauthorized" })
   }
 
-  // 🛑 Team full
+  
   if (request.team.players.length >= 4) {
     return Response.json({ success: false, message: "Team full" })
   }
 
-  // ✅ Add player to team
+  
   request.team.players.push(request.player._id)
   await request.team.save()
 
   request.player.teamId = request.team._id
   await request.player.save()
 
-  // ✅ Update request
-  request.status = "accepted"
-  await request.save()
+  
+  await TeamRequest.findByIdAndDelete(request._id)
 
-  // ❌ Cancel other pending requests of this player
-  await TeamRequest.updateMany(
-    {
-      player: request.player._id,
-      status: "pending",
-      _id: { $ne: request._id },
-    },
-    { status: "cancelled" }
-  )
+  
+  await TeamRequest.deleteMany({
+    player: request.player._id,
+    status: "pending",
+  })
 
   return Response.json({ success: true })
 }

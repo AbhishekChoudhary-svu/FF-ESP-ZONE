@@ -10,56 +10,51 @@ export async function GET(req) {
 
   const playerId = searchParams.get("playerId")
   const teamId = searchParams.get("teamId")
-  const userId = searchParams.get("userId")
+  
 
-  // ---------- PLAYER REQUESTS ----------
-  if (playerId) {
-    const requests = await TeamRequest.find({
-      player: playerId,
-      status: "pending",
-    })
-      .populate("team")
-      .populate("createdBy")
+  
+if (teamId && playerId) {
+  const team = await Team.findById(teamId)
 
-    return Response.json({
-      success: true,
-      type: "player",
-      requests,
-    })
+  if (!team) {
+    return Response.json({ success: false, message: "Team not found" })
   }
 
-  // ---------- TEAM (CAPTAIN) REQUESTS ----------
-  if (teamId && playerId) {
-    const team = await Team.findById(teamId)
-
-    if (!team) {
-      return Response.json({ success: false, message: "Team not found" })
-    }
-
-    // Only captain can see team requests
-    if (team.teamCaptain.toString() !== playerId) {
-      return Response.json({ success: false, message: "Not authorized" })
-    }
-
-    const requests = await TeamRequest.find({
-      team: teamId,
-      status: "pending",
-    })
-      .populate({
-        path: "player",
-        populate: { path: "userId", select: "username email" },
-      })
-      .populate("createdBy", "username")
-
-    return Response.json({
-      success: true,
-      type: "team",
-      requests,
-    })
+  if (team.teamCaptain.toString() !== playerId) {
+    return Response.json({ success: false, message: "Not authorized" })
   }
+
+  const requests = await TeamRequest.find({
+    team: teamId,
+    status: "pending",
+  })
+    .populate({
+      path: "player",
+      populate: { path: "userId", select: "username" },
+    })
+    .populate("createdBy", "username")
 
   return Response.json({
-    success: false,
-    message: "Invalid query parameters",
+    success: true,
+    type: "team",
+    requests,
   })
+}
+
+
+if (playerId) {
+  const requests = await TeamRequest.find({
+    player: playerId,
+    status: "pending",
+  })
+    .populate("team")
+    .populate("createdBy", "username")
+
+  return Response.json({
+    success: true,
+    type: "player",
+    requests,
+  })
+}
+
 }

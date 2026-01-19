@@ -126,25 +126,7 @@ export const ThemeProvider = ({ children }) => {
     if (data.success) setTeamRequests(data.requests);
   };
 
-  // ACCEPT / REJECT
-  const updateRequestStatus = async ({ requestId, status }) => {
-    const res = await fetch(`/api/team-request/${requestId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ status }),
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      if (player?._id) fetchPlayerRequests(player._id);
-      if (team?._id) fetchTeamRequests(team._id, user._id);
-      fetchTeam(player?._id);
-    }
-
-    return data;
-  };
+ 
 
   useEffect(() => {
     fetchUser();

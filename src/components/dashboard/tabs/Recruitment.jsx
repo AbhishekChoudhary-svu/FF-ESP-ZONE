@@ -103,6 +103,41 @@ export function PlayerRecruitmentTab() {
     }
   };
 
+  const handleJoinRequest = async (teamId) => {
+    try {
+      if (!context?.player?._id || !context?.user?.id) {
+        console.error("Login required");
+        return;
+      }
+
+      const res = await fetch("/api/team-requests/request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          teamId,
+          playerId: context.player._id,
+          userId: context.user.id,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        console.log("Join request sent");
+      } else {
+        console.error(data.message || "Failed to send request");
+      }
+    } catch (err) {
+      console.error("JOIN REQUEST ERROR:", err);
+      console.error("Something went wrong");
+    }
+  };
+
+  const hasCaptain =
+  String(context?.team?.teamCaptain._id) === String(context?.player?._id)
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -175,6 +210,7 @@ export function PlayerRecruitmentTab() {
                 <Badge variant="destructive">Inactive</Badge>
               )}
             </div>
+
 
             <Button
               variant="secondary"
@@ -333,9 +369,11 @@ export function PlayerRecruitmentTab() {
                     />
                   </div>
                 )}
-
-                <Button
-                  className="w-full bg-gradient-to-r from-primary to-accent"
+                {
+                  hasCaptain &&  <Button
+                   size="sm"
+                variant="secondary"
+                className={"w-full"}
                   disabled={invitedPlayers.has(selectedPlayer._id)}
                   onClick={async () => {
                     const res = await invitePlayer({
@@ -359,6 +397,9 @@ export function PlayerRecruitmentTab() {
                     ? "✔ Invited"
                     : "Send Team Invite"}
                 </Button>
+                }
+
+               
               </div>
             </>
           )}
@@ -486,9 +527,12 @@ export function PlayerRecruitmentTab() {
                   </div>
                 </div>
               </div>
-              <Button className="w-full bg-gradient-to-r from-primary to-accent">
-                {" "}
-                Send Join Request
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => handleJoinRequest(selectedTeam._id)}
+              >
+                Join Team
               </Button>
             </>
           ) : (

@@ -19,7 +19,7 @@ export async function PATCH(req) {
     })
   }
 
-  // 🔐 Permission check
+  
   const isInviteReject =
     request.type === "invite" &&
     request.player._id.toString() === playerId
@@ -35,7 +35,7 @@ export async function PATCH(req) {
     })
   }
 
-  // ❌ Delete request permanently
+  
   await TeamRequest.findByIdAndDelete(requestId)
 
   return Response.json({

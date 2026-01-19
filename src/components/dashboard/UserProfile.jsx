@@ -23,6 +23,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { CloudUpload, X, Play, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Badge } from "../ui/badge";
 
 export function UserProfile() {
   const context = useContext(MyContext);
@@ -31,7 +32,7 @@ export function UserProfile() {
   const [openTeam, setOpenTeam] = useState(false);
 
   const [open3, setOpen3] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [open4, setOpen4] = useState(false);
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [teamDetailOpen, setTeamDetailOpen] = useState(false);
@@ -218,9 +219,9 @@ export function UserProfile() {
     setSelectedPlayer(player);
     setDetailOpen(true);
   };
-  const openRequest = (req) => {
-    setSelectedRequest(req);
-    setOpen3(true);
+  const openRequestBox = () => {
+    
+    setOpen4(true);
   };
 
   const hasPlayer = Boolean(context?.player?._id);
@@ -249,6 +250,7 @@ export function UserProfile() {
       setStatus(context.team.status || "active");
       setTier(context.team.tier || "Amateur");
     }
+    
   }, [hasTeam]);
 
   const handleSubmitPlayer = async (e) => {
@@ -328,62 +330,67 @@ export function UserProfile() {
   };
 
   const handleAccept = async (requestId) => {
-  try {
-    const res = await fetch("/api/team-requests/accept", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify({
-        requestId,
-        playerId: context.player._id, // IMPORTANT
-      }),
-    });
+    try {
+      const res = await fetch("/api/team-requests/accept", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          requestId,
+          playerId: context.player._id, // IMPORTANT
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!data.success) {
-      alert(data.message || "Failed to accept request");
-      return;
+      if (!data.success) {
+        alert(data.message || "Failed to accept request");
+        return;
+      }
+
+      alert("Request accepted successfully 🎉");
+
+      // 🔄 Refresh data
+      setOpen3(false);
+      setOpen4(false);
+      context.fetchTeam(context.player._id);
+      context.fetchPlayer(context.user.id);
+      context.fetchPlayerRequests?.(); // if you added this in context
+    } catch (error) {
+      console.error("ACCEPT REQUEST ERROR:", error);
+      alert("Something went wrong");
     }
-
-    alert("Request accepted successfully 🎉");
-
-    // 🔄 Refresh data
-    setOpen3(false)
-    context.fetchTeam(context.player._id);
-    context.fetchPlayer(context.user.id);
-    context.fetchPlayerRequests?.(); // if you added this in context
-  } catch (error) {
-    console.error("ACCEPT REQUEST ERROR:", error);
-    alert("Something went wrong");
-  }
-};
-
+  };
 
   const handleReject = async (requestId) => {
-  try {
-    const res = await fetch("/api/team-requests/reject", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ requestId, playerId: context.player._id }),
-    });
+    try {
+      const res = await fetch("/api/team-requests/reject", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ requestId, playerId: context.player._id }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.success) {
-      setOpen(false)
-      console.log("Request rejected successfully:", data.message);
-    } else {
-      console.error("Failed to reject request:", data.message);
+      if (data.success) {
+        setOpen3(false);
+        setOpen4(false);
+        console.log("Request rejected successfully:", data.message);
+      } else {
+        console.error("Failed to reject request:", data.message);
+      }
+    } catch (error) {
+      console.error("Error rejecting request:", error);
     }
-  } catch (error) {
-    console.error("Error rejecting request:", error);
-  }
-};
+  };
+ 
+
+  const hasCaptain =
+  String(context?.team?.teamCaptain._id) === String(context?.player?._id)
 
 
   return (
@@ -841,7 +848,9 @@ export function UserProfile() {
               </DialogContent>
             </Dialog>
 
-            <Dialog open={openTeam} onOpenChange={setOpenTeam}>
+
+            {
+              hasCaptain &&  <Dialog open={openTeam} onOpenChange={setOpenTeam}>
               <DialogTrigger asChild>
                 <Button variant="secondary">
                   {hasTeam ? "Edit Team" : "Create Team"}
@@ -964,6 +973,8 @@ export function UserProfile() {
                 </form>
               </DialogContent>
             </Dialog>
+            }
+           
 
             {context?.team && (
               <Dialog open={teamDetailOpen} onOpenChange={setTeamDetailOpen}>
@@ -1067,16 +1078,19 @@ export function UserProfile() {
                         {/* Members List */}
                         <div>
                           <div className="flex justify-between">
-                            <p className="text-sm text-muted-foreground mb-2">
+                            <p className="text-sm text-muted-foreground my-2">
                               Team Members
                             </p>
-                            <Button
-                              className={"mr-12"}
-                              variant="secondary"
-                              onClick={() => openDetails()}
+                            {
+                              hasCaptain &&   <button
+                              className={"mr-8 text-sm text-red-800 font-bold cursor-pointer my-0"}
+                              
+                              onClick={() => openRequestBox()}
                             >
-                              Request
-                            </Button>
+                             + Request
+                            </button>
+                            }
+                           
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             {context.team.players &&
@@ -1166,7 +1180,8 @@ export function UserProfile() {
 
                                   {request.type === "invite" && (
                                     <span className="">
-                                     {" "} •{" "}
+                                      {" "}
+                                      •{" "}
                                       {request.status === "pending" &&
                                         "Invited you to Join Team"}
                                       {request.status === "accepted" &&
@@ -1223,6 +1238,99 @@ export function UserProfile() {
 
                               {/* INVITE ACCEPTED / REJECTED */}
                               {isInvite && !isPending && (
+                                <>
+                                  {isAccepted && (
+                                    <Badge className="bg-green-600">
+                                      ✅ Accepted
+                                    </Badge>
+                                  )}
+                                  {isRejected && (
+                                    <Badge variant="destructive">
+                                      ❌ Rejected
+                                    </Badge>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+            )}
+
+            {context?.teamRequests && (
+              <Dialog open={open4} onOpenChange={setOpen4}>
+
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Player Join Requests</DialogTitle>
+                  </DialogHeader>
+
+                  {context.teamRequests.length === 0 ? (
+                    <p className="text-center text-muted-foreground">
+                      No join requests
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {context.teamRequests.map((request) => {
+                        const isPending = request.status === "pending";
+                        const isAccepted = request.status === "accepted";
+                        const isRejected = request.status === "rejected";
+
+                        return (
+                          <div
+                            key={request._id}
+                            className="flex items-center justify-between border rounded-lg p-3"
+                          >
+                            {/* LEFT: PLAYER INFO */}
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={
+                                  request.player?.avatar ||
+                                  "/default-avatar.png"
+                                }
+                                alt={request.player?.userId?.username}
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+
+                              <div>
+                                <p className="font-semibold text-sm">
+                                  {request.player?.userId?.username}
+                                </p>
+
+                                <p className="text-xs text-muted-foreground">
+                                  {request.player?.inGameRole} • Requested to
+                                  join your team
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* RIGHT: ACTION / STATUS */}
+                            <div>
+                              {isPending && (
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700"
+                                    onClick={() => handleAccept(request._id)}
+                                  >
+                                    Accept
+                                  </Button>
+
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleReject(request._id)}
+                                  >
+                                    Reject
+                                  </Button>
+                                </div>
+                              )}
+
+                              {!isPending && (
                                 <>
                                   {isAccepted && (
                                     <Badge className="bg-green-600">
