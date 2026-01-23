@@ -195,8 +195,11 @@ export function PlayerRecruitmentTab() {
                 {player.inGameRole} + {player.userId?.playstyle}
               </p>
 
-              <p className="text-sm font-semibold text-primary">
+              <p className="text-sm font-semibold text-primary my-1">
                 Rank: {player.userId?.rank}
+              </p>
+              <p className="text-sm font-semibold mt-1">
+                Team: {player.teamId == null && "Not Joined Yet"}
               </p>
             </div>
 

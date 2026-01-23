@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CloudUpload, X, Play, User } from "lucide-react";
+import { CloudUpload, X, Play, User, CrossIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "../ui/badge";
 
@@ -59,6 +59,8 @@ export function UserProfile() {
 
   const [status, setStatus] = useState("active");
   const [tier, setTier] = useState("Amateur");
+
+  const [leaving, setLeaving] = useState(false);
 
   const handleAvatarChange = async (file) => {
     setAvatarPreview(URL.createObjectURL(file)); // instant preview
@@ -220,7 +222,6 @@ export function UserProfile() {
     setDetailOpen(true);
   };
   const openRequestBox = () => {
-    
     setOpen4(true);
   };
 
@@ -250,7 +251,6 @@ export function UserProfile() {
       setStatus(context.team.status || "active");
       setTier(context.team.tier || "Amateur");
     }
-    
   }, [hasTeam]);
 
   const handleSubmitPlayer = async (e) => {
@@ -387,11 +387,114 @@ export function UserProfile() {
       console.error("Error rejecting request:", error);
     }
   };
- 
+
+  const handleLeave = async () => {
+    if (!context?.team?._id || !context?.player?._id) return;
+
+    try {
+      setLeaving(true);
+
+      const res = await fetch("/api/team-requests/leave", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          teamId: context.team._id,
+          playerId: context.player._id,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        console.error(data.message || "Failed to leave team");
+        return;
+      }
+
+      alert("You left the team");
+
+      // 🔄 Refresh state
+      await context.fetchPlayer(context.user.id);
+      await context.fetchTeam(context.player._id);
+      await context.fetchActiveTeams();
+    } catch (err) {
+      console.error("LEAVE TEAM ERROR:", err);
+      alert("Something went wrong");
+    } finally {
+      setLeaving(false);
+    }
+  };
+
+  const handleKick = async (targetPlayerId) => {
+  try {
+    const res = await fetch("/api/team-requests/kick", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        teamId: context.team._id,
+        captainId: context.player._id,
+        targetPlayerId,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      console.error(data.message || "Failed to kick player");
+      return;
+    }
+
+    alert("Player removed from team");
+
+    
+   await context.fetchPlayer(context.user.id);
+      await context.fetchTeam(context.player._id);
+      await context.fetchActiveTeams();
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong");
+  }
+};
+
+const handleDisband = async () => {
+  try {
+    const res = await fetch("/api/team-requests/disband", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        teamId: context.team._id,
+        captainId: context.player._id,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      console.error(data.message || "Failed to disband team");
+      return;
+    }
+
+    alert("Team disbanded successfully");
+     await context.fetchPlayer(context.user.id);
+      await context.fetchTeam(context.player._id);
+      await context.fetchActiveTeams();
+    
+    setTeamDetailOpen(false)
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong");
+  }
+};
+
+
 
   const hasCaptain =
-  String(context?.team?.teamCaptain._id) === String(context?.player?._id)
-
+    String(context?.team?.teamCaptain._id) === String(context?.player?._id);
 
   return (
     <>
@@ -848,133 +951,131 @@ export function UserProfile() {
               </DialogContent>
             </Dialog>
 
+            {(!hasTeam || hasCaptain) && (
+              <Dialog open={openTeam} onOpenChange={setOpenTeam}>
+                <DialogTrigger asChild>
+                  <Button variant="secondary">
+                    {hasTeam ? "Edit Team" : "Create Team"}
+                  </Button>
+                </DialogTrigger>
 
-            {
-              hasCaptain &&  <Dialog open={openTeam} onOpenChange={setOpenTeam}>
-              <DialogTrigger asChild>
-                <Button variant="secondary">
-                  {hasTeam ? "Edit Team" : "Create Team"}
-                </Button>
-              </DialogTrigger>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {hasTeam ? "Edit Team Details" : "Create Team"}
+                    </DialogTitle>
+                  </DialogHeader>
 
-              <DialogContent className="max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>
-                    {hasTeam ? "Edit Team Details" : "Create Team"}
-                  </DialogTitle>
-                </DialogHeader>
+                  <form
+                    onSubmit={handleSubmitTeam}
+                    className="space-y-4 p-4 bg-zinc-950 rounded-xl"
+                  >
+                    {/* Team Logo */}
+                    <div className="space-y-3">
+                      <Label className="font-semibold">Team Logo</Label>
 
-                <form
-                  onSubmit={handleSubmitTeam}
-                  className="space-y-4 p-4 bg-zinc-950 rounded-xl"
-                >
-                  {/* Team Logo */}
-                  <div className="space-y-3">
-                    <Label className="font-semibold">Team Logo</Label>
+                      <div className="flex items-center gap-4">
+                        <div className="relative flex items-center justify-center w-28 h-28 rounded-full border-2 border-dashed border-muted-foreground/40 bg-muted/20 cursor-pointer">
+                          {!logoPreview ? (
+                            <p className="text-xs text-muted-foreground">
+                              Upload Logo
+                            </p>
+                          ) : (
+                            <img
+                              src={logoPreview}
+                              className="w-full h-full rounded-full object-cover"
+                              alt="Team Logo"
+                            />
+                          )}
 
-                    <div className="flex items-center gap-4">
-                      <div className="relative flex items-center justify-center w-28 h-28 rounded-full border-2 border-dashed border-muted-foreground/40 bg-muted/20 cursor-pointer">
-                        {!logoPreview ? (
-                          <p className="text-xs text-muted-foreground">
-                            Upload Logo
-                          </p>
-                        ) : (
-                          <img
-                            src={logoPreview}
-                            className="w-full h-full rounded-full object-cover"
-                            alt="Team Logo"
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) =>
+                              e.target.files &&
+                              handleLogoChange(e.target.files[0])
+                            }
+                            className="absolute inset-0 opacity-0 cursor-pointer"
                           />
-                        )}
 
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) =>
-                            e.target.files &&
-                            handleLogoChange(e.target.files[0])
-                          }
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                        />
+                          {logoPreview && (
+                            <button
+                              type="button"
+                              onClick={removeLogo}
+                              className="absolute -top-2 -right-2 bg-black text-white rounded-full p-1"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
 
-                        {logoPreview && (
-                          <button
-                            type="button"
-                            onClick={removeLogo}
-                            className="absolute -top-2 -right-2 bg-black text-white rounded-full p-1"
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="text-xs text-muted-foreground">
-                        PNG / JPG
-                        <br />
-                        Square recommended
+                        <div className="text-xs text-muted-foreground">
+                          PNG / JPG
+                          <br />
+                          Square recommended
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Team Name */}
-                  <div className="space-y-2">
-                    <Label>Team Name</Label>
-                    <Input
-                      value={teamName}
-                      onChange={(e) => setTeamName(e.target.value)}
-                      placeholder="Enter team name"
-                      required
-                    />
-                  </div>
+                    {/* Team Name */}
+                    <div className="space-y-2">
+                      <Label>Team Name</Label>
+                      <Input
+                        value={teamName}
+                        onChange={(e) => setTeamName(e.target.value)}
+                        placeholder="Enter team name"
+                        required
+                      />
+                    </div>
 
-                  {/* Team Tag */}
-                  <div className="space-y-2">
-                    <Label>Team Tag</Label>
-                    <Input
-                      value={tag}
-                      onChange={(e) => setTag(e.target.value.toUpperCase())}
-                      maxLength={5}
-                      placeholder="TSM"
-                      required
-                    />
-                  </div>
+                    {/* Team Tag */}
+                    <div className="space-y-2">
+                      <Label>Team Tag</Label>
+                      <Input
+                        value={tag}
+                        onChange={(e) => setTag(e.target.value.toUpperCase())}
+                        maxLength={5}
+                        placeholder="TSM"
+                        required
+                      />
+                    </div>
 
-                  {/* Status */}
-                  <div className="space-y-2">
-                    <Label>Team Status</Label>
-                    <Select value={status} onValueChange={setStatus}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                        <SelectItem value="disbanded">Disbanded</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {/* Tier */}
-                  <div className="space-y-2">
-                    <Label>Tier</Label>
-                    <Select value={tier} onValueChange={setTier}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Amateur">Amateur</SelectItem>
-                        <SelectItem value="Semi-Pro">Semi-Pro</SelectItem>
-                        <SelectItem value="Pro">Pro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    {/* Status */}
+                    <div className="space-y-2">
+                      <Label>Team Status</Label>
+                      <Select value={status} onValueChange={setStatus}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                          <SelectItem value="disbanded">Disbanded</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {/* Tier */}
+                    <div className="space-y-2">
+                      <Label>Tier</Label>
+                      <Select value={tier} onValueChange={setTier}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Amateur">Amateur</SelectItem>
+                          <SelectItem value="Semi-Pro">Semi-Pro</SelectItem>
+                          <SelectItem value="Pro">Pro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <Button type="submit" className="w-full">
-                    {hasTeam ? "Update Team" : "Create Team"}
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-            }
-           
+                    <Button type="submit" className="w-full">
+                      {hasTeam ? "Update Team" : "Create Team"}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            )}
 
             {context?.team && (
               <Dialog open={teamDetailOpen} onOpenChange={setTeamDetailOpen}>
@@ -1081,16 +1182,16 @@ export function UserProfile() {
                             <p className="text-sm text-muted-foreground my-2">
                               Team Members
                             </p>
-                            {
-                              hasCaptain &&   <button
-                              className={"mr-8 text-sm text-red-800 font-bold cursor-pointer my-0"}
-                              
-                              onClick={() => openRequestBox()}
-                            >
-                             + Request
-                            </button>
-                            }
-                           
+                            {hasCaptain && (
+                              <button
+                                className={
+                                  "mr-8 text-sm text-red-800 font-bold cursor-pointer my-0"
+                                }
+                                onClick={() => openRequestBox()}
+                              >
+                                + Request
+                              </button>
+                            )}
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             {context.team.players &&
@@ -1098,21 +1199,32 @@ export function UserProfile() {
                               context.team.players.map((member) => (
                                 <div
                                   key={member._id}
-                                  className="flex items-center gap-2 p-2  rounded"
+                                  className="flex items-center justify-between gap-2 p-1  rounded"
                                 >
-                                  <img
-                                    src={member.avatar || "/default-avatar.png"}
-                                    alt={member.userId.username}
-                                    className="w-10 h-10 rounded-full object-cover"
-                                  />
-                                  <div className="flex flex-col ">
-                                    <span className="text-sm">
-                                      {member.userId.username}
-                                    </span>
-                                    <span className="text-xs">
-                                      ID :{member.userId.ffUid}
-                                    </span>
+                                  <div className="flex items-center gap-2">
+                                    <img
+                                      src={
+                                        member.avatar || "/default-avatar.png"
+                                      }
+                                      alt={member.userId.username}
+                                      className="w-10 h-10 rounded-full object-cover"
+                                    />
+                                    <div className="flex flex-col ">
+                                      <span className="text-sm">
+                                        {member.userId.username}
+                                      </span>
+                                      <span className="text-xs">
+                                        ID :{member.userId.ffUid}
+                                      </span>
+                                    </div>
                                   </div>
+                                  {(hasCaptain && member._id !== context?.player?._id) ? (
+                                    <X 
+                                    onClick={() => handleKick(member._id)}
+                                    className="w-5 hover:text-red-700" />
+                                  ) : (
+                                    ""
+                                  )}
                                 </div>
                               ))
                             ) : (
@@ -1122,6 +1234,26 @@ export function UserProfile() {
                             )}
                           </div>
                         </div>
+                        {hasCaptain === true ? (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="mt-1 w-full"
+                            onClick={handleDisband}
+                          >
+                             Disband Team
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="mt-1 w-full"
+                            disabled={leaving}
+                            onClick={handleLeave}
+                          >
+                            {leaving ? "Leaving..." : "Leave Team"}
+                          </Button>
+                        )}
                       </div>
                     </>
                   ) : (
@@ -1263,7 +1395,6 @@ export function UserProfile() {
 
             {context?.teamRequests && (
               <Dialog open={open4} onOpenChange={setOpen4}>
-
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Player Join Requests</DialogTitle>
