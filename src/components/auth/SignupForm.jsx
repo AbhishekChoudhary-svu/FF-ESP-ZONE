@@ -8,6 +8,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { signInWithPopup } from "firebase/auth"
 import { auth, googleProvider } from "@/lib/firebase"
+import { Loader2 } from "lucide-react"
+import toast from "react-hot-toast"
 
 export function SignupForm() {
   const router = useRouter()
@@ -18,9 +20,11 @@ export function SignupForm() {
   const [username, setUsername] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [loading1, setLoading1] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
     setError("")
 
     if (password !== confirmPassword) {
@@ -52,46 +56,46 @@ export function SignupForm() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Signup failed")
+        toast.error(data.error || "Signup failed")
       }
 
-     
+     toast.success(data.message)
       router.push(`/verifyEmail?email=${encodeURIComponent(email)}`)
 
     } catch (err) {
       console.error(err)
-      setError(err.message || "Signup failed")
+      toast.error(err.message || "Signup failed")
     } finally {
       setLoading(false)
     }
   }
 
   const handleGoogleLogin = async () => {
-  try {
-    const result = await signInWithPopup(auth, googleProvider)
-    const user = result.user
+    setLoading1(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
 
-    
-    const idToken = await user.getIdToken(true)
+      const idToken = await user.getIdToken(true);
 
+      const res = await fetch("/api/auth/googleAuth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
 
-    const res = await fetch("/api/auth/googleAuth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken }),
-    })
+      const data = await res.json();
 
-    const data = await res.json()
-
-    if (!res.ok) throw new Error(data.error)
-
-    // ✅ Redirect
-    window.location.href = "/dashboard"
-  } catch (err) {
-    console.error(err)
-    alert("Google login failed")
-  }
-}
+      if (!res.ok) toast.error(data.error);
+      
+      toast.success("Google Login Successfull")
+      setLoading1(false);
+      window.location.href = "/dashboard";
+    } catch (err) {
+      console.error(err);
+      toast.error(data.error);
+    }
+  };
 
 
   return (
@@ -161,7 +165,10 @@ export function SignupForm() {
         )}
 
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Creating Account..." : "Create Account"}
+           {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : null}
+          {loading ? "" : "Create Account"}
         </Button>
 
         <div className="relative my-4">
@@ -180,9 +187,13 @@ export function SignupForm() {
             type="button"
             variant="outline"
             className="w-1/2"
+            disabled={loading1}
             onClick={handleGoogleLogin}
           >
-            Continue with Google
+            {loading1 ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : null}
+            {loading1 ? "" : "Continue With Google"}
           </Button>
 
           <Button type="button" variant="outline" className="w-1/2">

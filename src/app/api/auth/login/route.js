@@ -48,7 +48,7 @@ export async function POST(req) {
       emailVerified: user.emailVerified,
     }
 
-    const res = NextResponse.json({ success: true, user })
+    const res = NextResponse.json({ success: true, user ,message : "Login Successfull" })
 
     // Set HTTP-only secure cookie
     res.cookies.set({

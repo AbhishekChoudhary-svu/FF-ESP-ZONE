@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import toast from "react-hot-toast"
 
 export default function VerifyEmailPage() {
   const router = useRouter()
@@ -76,12 +77,12 @@ export default function VerifyEmailPage() {
 
       const data = await res.json()
 
-      if (!res.ok) throw new Error(data.error || "Failed to send email")
+      if (!res.ok) toast.error(data.error || "Failed to send email")
 
-      setMessage(data.message || "Verification email sent again!")
+      toast.success(data.message || "Verification email sent again!")
       setTimer(60)
     } catch (err) {
-      setMessage(err.message || "Try again later")
+      toast.error(err.message || "Try again later")
     } finally {
       setLoading(false)
     }

@@ -14,15 +14,15 @@ export async function POST(req) {
       )
     }
 
-    // 🔐 Verify Firebase token
+    
     const decoded = await adminAuth.verifyIdToken(idToken)
 
     await dbConnect()
 
-    // ✅ CHECK EXISTING USER
+    
     let user = await User.findOne({ uid: decoded.uid })
 
-    // 🆕 CREATE USER IF NOT EXISTS
+    
     if (!user) {
       user = await User.create({
         uid: decoded.uid,
@@ -43,8 +43,7 @@ export async function POST(req) {
           role: user.role || "user",
           emailVerified: user.emailVerified,
         }
-    
-    
+        
       const res = NextResponse.json({ success: true })
         // Set HTTP-only secure cookie
         res.cookies.set({
@@ -57,12 +56,6 @@ export async function POST(req) {
           sameSite: "lax",
         })
 
-
-
-
-  
-
-    
 
     return res
   } catch (error) {
