@@ -1,17 +1,6 @@
 "use client";
 
 import { useContext, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-
 import MyContext from "@/context/ThemeProvider";
 
 export function PlayerRecruitmentTab() {
@@ -96,7 +85,7 @@ export function PlayerRecruitmentTab() {
         throw new Error(data.message || "Failed to send invite");
       }
 
-      return data; // contains request object
+      return data;
     } catch (error) {
       console.error("INVITE PLAYER ERROR:", error);
       return { success: false, message: error.message };
@@ -131,252 +120,250 @@ export function PlayerRecruitmentTab() {
       }
     } catch (err) {
       console.error("JOIN REQUEST ERROR:", err);
-      console.error("Something went wrong");
     }
   };
 
   const hasCaptain =
-  String(context?.team?.teamCaptain._id) === String(context?.player?._id)
+    String(context?.team?.teamCaptain._id) === String(context?.player?._id);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-bold">Player Recruitment</h3>
+    <div className="space-y-6 font-['Rajdhani']">
+      
+      {/* Tab View Header Block */}
+      <div className="flex justify-between items-center border-b border-[#141822] pb-3">
+        <h3 className="text-xl font-bold font-['Orbitron'] tracking-wider text-white uppercase">
+          Player Recruitment
+        </h3>
       </div>
 
-      <div className="flex gap-3">
-        <Input
-          placeholder="Search player or team..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      {/* Interactive Controls Segment */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <input
+            type="text"
+            placeholder="Search roster or team tag..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 bg-[#0a0c10] border border-[#1e2330] rounded text-[#d0d5df] placeholder-[#4e5d78] text-sm font-semibold tracking-wide focus:outline-none focus:border-[#ff6b00]/60 transition-colors"
+          />
+        </div>
 
-        <select
-          className="border rounded px-3 py-2 bg-background"
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-        >
-          <option value="recent">Recent</option>
-          <option value="name">Name</option>
-          <option value="active">Active</option>
-        </select>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-        {players.map((player) => (
-          <Card
-            key={player._id}
-            className="bg-gradient-to-br from-primary/15 to-accent/15
-              border border-primary/30 backdrop-blur-md
-              rounded-xl p-4 flex flex-col items-center
-              justify-between hover:scale-[1.02] transition"
+        <div className="relative">
+          <select
+            className="w-full sm:w-40 appearance-none px-4 py-2 bg-[#0a0c10] border border-[#1e2330] rounded text-[#d0d5df] text-sm font-bold uppercase tracking-wider focus:outline-none focus:border-[#ff6b00]/60 cursor-pointer pr-10 transition-colors"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
           >
-            {/* Avatar */}
-            <div className="w-36 h-36 rounded-xl overflow-hidden shadow-lg mb-1">
+            <option value="recent">⏱ Recent</option>
+            <option value="name">🔤 Alphabetical</option>
+            <option value="active">⚡ Active State</option>
+          </select>
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-xs text-[#4e5d78]">
+            ▼
+          </div>
+        </div>
+      </div>
+
+      {/* Main Roster Overview Card Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        
+        {/* Active Player Card Render loops */}
+        {players.map((player) => (
+          <div
+            key={player._id}
+            className="bg-[#0a0c10] border border-[#1e2330] hover:border-[#ff6b00]/40 rounded-lg p-4 flex flex-col items-center justify-between hover:shadow-[0_4px_20px_rgba(255,107,0,0.08)] group transition-all duration-200"
+          >
+            <div className="w-28 h-28 rounded-md overflow-hidden border border-[#141822] bg-[#07080b] mb-3">
               <img
-                src={player.avatar}
-                alt="avatar"
-                className="w-full h-full object-cover"
+                src={player.avatar || "/default-avatar.png"}
+                alt="Player Avatar"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
             </div>
 
-            {/* Info */}
-            <div className="text-center space-y-1">
-              <h4 className="text-lg font-bold truncate">
+            <div className="text-center w-full space-y-1 mb-3">
+              <h4 className="text-base font-['Orbitron'] font-bold text-white truncate px-1">
                 {player.userId?.username}
               </h4>
-
-              <p className="text-xs text-foreground/60">
-                FFUID: {player.userId?.ffUid}
+              <p className="text-[11px] text-[#4e5d78] font-semibold tracking-wider uppercase">
+                UID: {player.userId?.ffUid || "N/A"}
               </p>
-
-              <p className="text-sm text-foreground/70">
-                {player.inGameRole} + {player.userId?.playstyle}
+              <p className="text-xs text-[#8090a0] font-medium truncate">
+                {player.inGameRole} • {player.userId?.playstyle || "All-Rounder"}
               </p>
-
-              <p className="text-sm font-semibold text-primary my-1">
-                Rank: {player.userId?.rank}
-              </p>
-              <p className="text-sm font-semibold mt-1">
-                Team: {player.teamId == null && "Not Joined Yet"}
-              </p>
+              <div className="pt-1 flex flex-col gap-0.5 text-xs">
+                <span className="font-bold text-[#ff9a00]">
+                  Rank: {player.userId?.rank || "Platinum"}
+                </span>
+                <span className="text-[11px] text-[#4e5d78] font-bold uppercase">
+                  {player.teamId == null ? "⚠️ Free Agent" : "✓ In Squad"}
+                </span>
+              </div>
             </div>
 
-            {/* Badges */}
-            <div className="flex flex-wrap justify-center gap-2 mt-1">
-              {player.isCaptain && <Badge variant="secondary">IGL</Badge>}
-              <Badge variant="outline">❤️ {player.likes}</Badge>
+            {/* Micro Tag Display Block */}
+            <div className="flex flex-wrap justify-center gap-1.5 w-full mb-4">
+              {player.isCaptain && (
+                <span className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black tracking-widest uppercase rounded-sm">
+                  IGL
+                </span>
+              )}
+              <span className="px-2 py-0.5 bg-[#1e2330] text-[#8090a0] text-[10px] font-bold rounded-sm">
+                ❤️ {player.likes}
+              </span>
               {player.isActive ? (
-                <Badge className="bg-green-600">Active</Badge>
+                <span className="px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-black tracking-widest uppercase rounded-sm">
+                  ONLINE
+                </span>
               ) : (
-                <Badge variant="destructive">Inactive</Badge>
+                <span className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black tracking-widest uppercase rounded-sm">
+                  AWAY
+                </span>
               )}
             </div>
 
-
-            <Button
-              variant="secondary"
-              size="sm"
-              className="mt-1 w-full"
+            <button
               onClick={() => openDetails(player)}
+              className="w-full py-1.5 text-center text-xs font-bold uppercase tracking-wider rounded bg-[#141822] border border-[#1e2330] text-[#8090a0] hover:text-[#ff8c30] hover:border-[#ff6b00]/30 hover:bg-[#ff6b00]/5 transition-all cursor-pointer"
             >
-              View Details
-            </Button>
-          </Card>
+              Inspect Profile
+            </button>
+          </div>
         ))}
 
-        {/* Teams */}
+        {/* Registered Team Card Render loops */}
         {teams.map((team) => (
-          <Card
+          <div
             key={team._id}
-            className="bg-gradient-to-br from-blue-500/15 to-cyan-500/15
-      border border-blue-500/30 backdrop-blur-md
-      rounded-xl p-4 flex flex-col items-center
-      justify-between hover:scale-[1.02] transition"
+            className="bg-[#0a0c10] border border-[#1e2330] hover:border-blue-500/40 rounded-lg p-4 flex flex-col items-center justify-between hover:shadow-[0_4px_20px_rgba(59,130,246,0.08)] group transition-all duration-200"
           >
-            {/* Team Logo */}
-            <div className="w-36 h-36 rounded-xl overflow-hidden shadow-lg mb-1">
+            <div className="w-28 h-28 rounded-md overflow-hidden border border-[#141822] bg-[#07080b] flex items-center justify-center mb-3">
               {team.logo ? (
                 <img
                   src={team.logo}
                   alt={team.teamName}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
               ) : (
-                <div
-                  className="w-full h-full flex items-center justify-center
-          bg-blue-600 text-white text-4xl font-bold"
-                >
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-600/20 to-cyan-600/20 text-blue-400 font-['Orbitron'] text-3xl font-black uppercase">
                   {team.teamName?.charAt(0)}
                 </div>
               )}
             </div>
 
-            {/* Team Info */}
-            <div className="text-center space-y-1">
-              <h4 className="text-lg font-bold truncate">{team.teamName}</h4>
-
-              <p className="text-xs text-foreground/60">TAG: {team.tag}</p>
-
-              <p className="text-sm text-foreground/70">
-                Region: {team.region}
+            <div className="text-center w-full space-y-1 mb-3">
+              <h4 className="text-base font-['Orbitron'] font-bold text-white truncate px-1">
+                {team.teamName}
+              </h4>
+              <p className="text-[11px] text-blue-400 font-black tracking-widest uppercase">
+                TAG: [{team.tag}]
               </p>
-
-              <p className="text-sm font-semibold text-primary">
-                Tier: {team.tier}
+              <p className="text-xs text-[#8090a0] font-medium">
+                Region: {team.region || "Global"}
+              </p>
+              <p className="text-xs font-bold text-cyan-400 pt-1">
+                Tier: {team.tier || "Tier 3"}
               </p>
             </div>
 
-            {/* Badges */}
-            <div className="flex flex-wrap justify-center gap-2 mt-1">
-              {team.teamCaptain && <Badge variant="secondary">Captain</Badge>}
-
-              <Badge variant="outline">👥 {team.players?.length || 0}</Badge>
-
+            <div className="flex flex-wrap justify-center gap-1.5 w-full mb-4">
+              <span className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black tracking-widest uppercase rounded-sm">
+                SQUAD
+              </span>
+              <span className="px-2 py-0.5 bg-[#1e2330] text-[#8090a0] text-[10px] font-bold rounded-sm">
+                👥 {team.players?.length || 0}/4
+              </span>
               {team.status === "active" ? (
-                <Badge className="bg-green-600">Active</Badge>
+                <span className="px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-black tracking-widest uppercase rounded-sm">
+                  ACTIVE
+                </span>
               ) : (
-                <Badge variant="destructive">Inactive</Badge>
+                <span className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black tracking-widest uppercase rounded-sm">
+                  DISBANDED
+                </span>
               )}
             </div>
 
-            {/* Action */}
-            <Button
-              variant="secondary"
-              size="sm"
-              className="mt-1 w-full"
+            <button
               onClick={() => openTeamDetails(team)}
+              className="w-full py-1.5 text-center text-xs font-bold uppercase tracking-wider rounded bg-[#141822] border border-[#1e2330] text-[#8090a0] hover:text-blue-400 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all cursor-pointer"
             >
-              View Details
-            </Button>
-          </Card>
+              Inspect Squad
+            </button>
+          </div>
         ))}
       </div>
 
-      {/* Player Detail Dialog */}
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-2xl">
-          {selectedPlayer && (
-            <>
-              <DialogHeader>
-                <DialogTitle>
-                  {selectedPlayer.userId?.username} — Profile
-                </DialogTitle>
-              </DialogHeader>
+      {/* ================= MODAL PROFILE OVERLAYS ================= */}
 
-              <div className="space-y-6">
-                {/* Stats */}
-                <div className="grid grid-cols-5 gap-4 text-center">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Matches</p>
-                    <p className="font-bold">
-                      {selectedPlayer.stats?.matchesPlayed ?? 0}
-                    </p>
-                  </div>
+      {/* Player Detail Dialog Modal */}
+      {detailOpen && selectedPlayer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#0a0c10] border border-[#2a2e3a] w-full max-w-xl rounded-lg overflow-hidden relative shadow-[0_10px_40px_rgba(0,0,0,0.5)] max-h-[90vh] overflow-y-auto">
+            <div className="p-5 border-b border-[#141822] flex justify-between items-center bg-[#0d0f15]">
+              <h3 className="font-['Orbitron'] font-bold text-base text-white tracking-wide uppercase">
+                ⚔️ {selectedPlayer.userId?.username} // Dossier
+              </h3>
+              <button 
+                onClick={() => setDetailOpen(false)}
+                className="text-[#4e5d78] hover:text-[#ff6b00] text-sm font-bold uppercase cursor-pointer tracking-wider transition-colors"
+              >
+                ✕ Close
+              </button>
+            </div>
+            
+            <div className="p-5 space-y-6">
+              {/* Performance Stats Dashboard Grid */}
+              <div className="grid grid-cols-5 gap-2 bg-[#07080b] p-3 border border-[#141822] rounded">
+                <div className="text-center border-r border-[#141822]/60 last:border-0">
+                  <p className="text-[10px] text-[#4e5d78] uppercase font-bold tracking-wider">Matches</p>
+                  <p className="font-['Orbitron'] text-sm font-bold text-white mt-0.5">{selectedPlayer.stats?.matchesPlayed ?? 0}</p>
+                </div>
+                <div className="text-center border-r border-[#141822]/60 last:border-0">
+                  <p className="text-[10px] text-[#4e5d78] uppercase font-bold tracking-wider">Kills</p>
+                  <p className="font-['Orbitron'] text-sm font-bold text-[#ff6b00] mt-0.5">{selectedPlayer.stats?.kills ?? 0}</p>
+                </div>
+                <div className="text-center border-r border-[#141822]/60 last:border-0">
+                  <p className="text-[10px] text-[#4e5d78] uppercase font-bold tracking-wider">Deaths</p>
+                  <p className="font-['Orbitron'] text-sm font-bold text-white mt-0.5">{selectedPlayer.stats?.deaths ?? 0}</p>
+                </div>
+                <div className="text-center border-r border-[#141822]/60 last:border-0">
+                  <p className="text-[10px] text-[#4e5d78] uppercase font-bold tracking-wider">Assists</p>
+                  <p className="font-['Orbitron'] text-sm font-bold text-white mt-0.5">{selectedPlayer.stats?.assists ?? 0}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] text-[#4e5d78] uppercase font-bold tracking-wider">Win Rate</p>
+                  <p className="font-['Orbitron'] text-sm font-bold text-green-400 mt-0.5">{selectedPlayer.stats?.winRate ?? 0}%</p>
+                </div>
+              </div>
 
-                  <div>
-                    <p className="text-xs text-muted-foreground">Kills</p>
-                    <p className="font-bold">
-                      {selectedPlayer.stats?.kills ?? 0}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-muted-foreground">Deaths</p>
-                    <p className="font-bold">
-                      {selectedPlayer.stats?.deaths ?? 0}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-muted-foreground">Assists</p>
-                    <p className="font-bold">
-                      {selectedPlayer.stats?.assists ?? 0}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-muted-foreground">Win Rate</p>
-                    <p className="font-bold">
-                      {selectedPlayer.stats?.winRate ?? 0}%
-                    </p>
+              {/* Photo Clips Render Section */}
+              {selectedPlayer.clipPhotos?.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#8090a0]">📸 Proof Matrix / Screen Caps</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedPlayer.clipPhotos.map((photo, i) => (
+                      <div key={i} className="h-28 rounded overflow-hidden border border-[#1c212e] bg-[#07080b]">
+                        <img src={photo} className="h-full w-full object-cover" alt="Combat Media Clip" />
+                      </div>
+                    ))}
                   </div>
                 </div>
+              )}
 
-                {/* Photos */}
-                {selectedPlayer.clipPhotos?.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold mb-2">Photo Clips</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {selectedPlayer.clipPhotos.map((photo, i) => (
-                        <img
-                          key={i}
-                          src={photo}
-                          className="h-28 w-full rounded object-cover"
-                          alt="clip"
-                        />
-                      ))}
-                    </div>
+              {/* Video Highlight Render Frame */}
+              {selectedPlayer.clipVideo && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#8090a0]">📹 Gameplay VOD Highlight</h4>
+                  <div className="border border-[#1c212e] rounded overflow-hidden bg-black">
+                    <video src={selectedPlayer.clipVideo} controls className="w-full h-48 object-cover" />
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Video */}
-                {selectedPlayer.clipVideo && (
-                  <div>
-                    <h4 className="font-semibold mb-2">Video Clip</h4>
-                    <video
-                      src={selectedPlayer.clipVideo}
-                      controls
-                      className="w-full rounded h-[30vh]"
-                    />
-                  </div>
-                )}
-                {
-                  hasCaptain &&  <Button
-                   size="sm"
-                variant="secondary"
-                className={"w-full"}
+              {/* Recruitment Captain Request Dispatch Engine */}
+              {hasCaptain && (
+                <button
                   disabled={invitedPlayers.has(selectedPlayer._id)}
                   onClick={async () => {
                     const res = await invitePlayer({
@@ -395,156 +382,125 @@ export function PlayerRecruitmentTab() {
                       alert(res.message);
                     }
                   }}
+                  className={`w-full py-2.5 font-bold text-xs uppercase tracking-widest rounded-sm transition-all duration-200 border cursor-pointer ${
+                    invitedPlayers.has(selectedPlayer._id)
+                      ? "bg-[#141822] border-[#2a2e3a] text-green-400"
+                      : "bg-gradient-to-r from-[#ff6b00] to-[#ff9a00] border-transparent text-white shadow-[0_4px_12px_rgba(255,107,0,0.2)] hover:from-[#ff7c1a] active:scale-[0.99]"
+                  }`}
                 >
-                  {invitedPlayers.has(selectedPlayer._id)
-                    ? "✔ Invited"
-                    : "Send Team Invite"}
-                </Button>
-                }
+                  {invitedPlayers.has(selectedPlayer._id) ? "✓ Request Dispatched" : "Send Team Invite"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
-               
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={teamDetailOpen} onOpenChange={setTeamDetailOpen}>
-        <DialogContent className="max-w-2xl">
-          {selectedTeam ? (
-            <>
-              <DialogHeader>
-                <DialogTitle>{selectedTeam.teamName} — Team Info</DialogTitle>
-              </DialogHeader>
-
-              <div className="space-y-4">
-                {/* Team Logo + Basic Info */}
-                <div className="grid grid-cols-3 gap-4 items-center">
-                  {selectedTeam.logo ? (
-                    <img
-                      src={selectedTeam.logo}
-                      alt={selectedTeam.teamName}
-                      className="w-32 h-32 rounded-full object-cover border-2 border-primary"
-                    />
-                  ) : (
-                    <div className="w-32 h-32 rounded-full bg-gray-700 flex items-center justify-center text-white text-xl">
-                      {selectedTeam.teamName?.charAt(0) || "T"}
-                    </div>
-                  )}
-
-                  <div className="flex flex-col gap-3">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Team Name</p>
-                      <p className="font-semibold text-lg">
-                        {selectedTeam.teamName}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-sm text-muted-foreground">Team Tag</p>
-                      <p className="font-semibold text-lg">
-                        {selectedTeam.tag}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Region</p>
-                      <p className="font-semibold text-lg">
-                        {selectedTeam.region}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-sm text-muted-foreground">Tier</p>
-                      <p className="font-semibold text-lg">
-                        {selectedTeam.tier}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Meta Info */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Team Captain
-                    </p>
-                    <p className="font-semibold text-lg">
-                      {selectedTeam.teamCaptain?.userId?.username ||
-                        "Not Assigned"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-muted-foreground">Team Status</p>
-                    <p className="font-semibold text-lg">
-                      {selectedTeam.status
-                        ? selectedTeam.status.charAt(0).toUpperCase() +
-                          selectedTeam.status.slice(1)
-                        : "Inactive"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-muted-foreground">Created By</p>
-                    <p className="font-semibold text-lg">
-                      {selectedTeam.createdBy?.username || "Unknown"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Team Members */}
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Team Members
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedTeam.players && selectedTeam.players.length > 0 ? (
-                      selectedTeam.players.map((member) => (
-                        <div
-                          key={member._id}
-                          className="flex items-center gap-2 p-2 rounded"
-                        >
-                          <img
-                            src={member.avatar || "/default-avatar.png"}
-                            alt={member.userId?.username}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium">
-                              {member.userId?.username}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              ID: {member.userId?.ffUid}
-                            </span>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-muted-foreground">No members yet</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => handleJoinRequest(selectedTeam._id)}
+      {/* Team Detail Dialog Modal */}
+      {teamDetailOpen && selectedTeam && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#0a0c10] border border-[#2a2e3a] w-full max-w-xl rounded-lg overflow-hidden relative shadow-[0_10px_40px_rgba(0,0,0,0.5)] max-h-[90vh] overflow-y-auto">
+            <div className="p-5 border-b border-[#141822] flex justify-between items-center bg-[#0d0f15]">
+              <h3 className="font-['Orbitron'] font-bold text-base text-white tracking-wide uppercase">
+                🛡️ {selectedTeam.teamName} // Clan Profile
+              </h3>
+              <button 
+                onClick={() => setTeamDetailOpen(false)}
+                className="text-[#4e5d78] hover:text-blue-400 text-sm font-bold uppercase cursor-pointer tracking-wider transition-colors"
               >
-                Join Team
-              </Button>
-            </>
-          ) : (
-            <p className="text-center text-muted-foreground">
-              No team selected.
-            </p>
-          )}
-        </DialogContent>
-      </Dialog>
+                ✕ Close
+              </button>
+            </div>
+
+            <div className="p-5 space-y-6">
+              {/* Primary Identity Row */}
+              <div className="flex flex-col sm:flex-row items-center gap-5 bg-[#07080b] p-4 border border-[#141822] rounded-md">
+                <div className="w-20 h-20 rounded-md overflow-hidden border-2 border-blue-500/30 flex items-center justify-center bg-[#0d0f15] shrink-0">
+                  {selectedTeam.logo ? (
+                    <img src={selectedTeam.logo} alt={selectedTeam.teamName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-2xl font-['Orbitron'] font-black text-blue-400">{selectedTeam.teamName?.charAt(0)}</span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 w-full text-center sm:text-left">
+                  <div>
+                    <p className="text-[10px] text-[#4e5d78] font-bold uppercase tracking-wider">Clan Label</p>
+                    <p className="text-base font-bold text-white truncate">{selectedTeam.teamName}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#4e5d78] font-bold uppercase tracking-wider">Faction Signature</p>
+                    <p className="text-base font-['Orbitron'] font-bold text-blue-400">[{selectedTeam.tag}]</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#4e5d78] font-bold uppercase tracking-wider">Operational Area</p>
+                    <p className="text-sm font-semibold text-[#8090a0]">{selectedTeam.region || "Global"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#4e5d78] font-bold uppercase tracking-wider">Competition Bracket</p>
+                    <p className="text-sm font-black text-cyan-400 uppercase">{selectedTeam.tier || "Tier 3"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Clan Meta Row Summary Block */}
+              <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                <div className="bg-[#0d0f15] p-2.5 rounded border border-[#141822]">
+                  <span className="block text-[10px] text-[#4e5d78] font-bold uppercase">Squad Leader</span>
+                  <span className="block font-bold text-white truncate mt-0.5">
+                    {selectedTeam.teamCaptain?.userId?.username || "Vacant"}
+                  </span>
+                </div>
+                <div className="bg-[#0d0f15] p-2.5 rounded border border-[#141822]">
+                  <span className="block text-[10px] text-[#4e5d78] font-bold uppercase">Status Spectrum</span>
+                  <span className="block font-bold text-green-400 mt-0.5 uppercase tracking-wide">
+                    {selectedTeam.status || "Active"}
+                  </span>
+                </div>
+                <div className="bg-[#0d0f15] p-2.5 rounded border border-[#141822]">
+                  <span className="block text-[10px] text-[#4e5d78] font-bold uppercase">Founder Identity</span>
+                  <span className="block font-bold text-[#8090a0] truncate mt-0.5">
+                    {selectedTeam.createdBy?.username || "System"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Active Sub-Roster Members Matrix Block */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#8090a0]">👥 Registered Squad Members</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {selectedTeam.players && selectedTeam.players.length > 0 ? (
+                    selectedTeam.players.map((member) => (
+                      <div key={member._id} className="flex items-center gap-3 p-2 rounded bg-[#07080b] border border-[#141822]">
+                        <img
+                          src={member.avatar || "/default-avatar.png"}
+                          alt={member.userId?.username}
+                          className="w-8 h-8 rounded object-cover border border-[#1e2330]"
+                        />
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-[#d0d5df] truncate">{member.userId?.username}</span>
+                          <span className="text-[10px] text-[#4e5d78] tracking-wider">UID: {member.userId?.ffUid || "---"}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-[#4e5d78] font-bold uppercase italic py-2">No active personnel assigned to this squad ledger.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Intent Trigger */}
+              <button
+                onClick={() => handleJoinRequest(selectedTeam._id)}
+                className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs uppercase tracking-widest rounded-sm transition-all duration-200 active:scale-[0.99] shadow-[0_4px_12px_rgba(59,130,246,0.2)] cursor-pointer"
+              >
+                Apply to Join Team
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

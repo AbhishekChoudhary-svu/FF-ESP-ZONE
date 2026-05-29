@@ -124,3 +124,36 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* app/globals.css */
+
+@layer base {
+  /* 1. Global scrollbar for Chrome, Edge, Safari, and Opera */
+  ::-webkit-scrollbar {
+    width: 15px; /* Slightly wider for the main page */
+    height: 10px; /* For horizontal scroll */
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--background); /* Matches your deep dark theme */
+  }
+
+  ::-webkit-scrollbar-thumb {
+    /* Uses your primary OKLCH color with 30% transparency */
+    background: color-mix(in oklch, var(--primary), transparent 40%);
+    border-radius: 100px;
+    border: 2px solid var(--background); /* Creates a "floating" gap effect */
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    /* Brightens to full primary color on hover */
+    background: var(--primary);
+  }
+
+  /* 2. Global scrollbar for Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--primary), transparent 40%) var(--background);
+  }
+}
