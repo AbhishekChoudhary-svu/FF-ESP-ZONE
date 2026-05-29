@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CreateTournamentForm } from "@/components/forms/CreateTournament";
+import { TournamentCard } from "../TournamentCard";
 
 export function PaidTournamentsTab() {
   const [tournaments, setTournaments] = useState([
@@ -139,64 +140,18 @@ export function PaidTournamentsTab() {
 
       {/* Grid Dashboard Metric Displays */}
       {processedTournaments.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {processedTournaments.map((tournament) => (
-            <div
-              key={tournament.id}
-              className="bg-[#0a0c10] border border-[#1e2330] hover:border-[#ff9a00]/30 rounded-lg p-4 flex flex-col justify-between hover:shadow-[0_4px_20px_rgba(255,154,0,0.05)] group transition-all duration-200"
-            >
-              <div className="flex justify-between items-start gap-4 mb-3">
-                <div className="min-w-0">
-                  <span className="inline-block px-2 py-0.5 bg-[#ff9a00]/10 border border-[#ff9a00]/20 text-[#ffaa00] font-['Orbitron'] text-[10px] font-black tracking-widest uppercase rounded-sm mb-1.5">
-                    {tournament.type} // {tournament.mode}
-                  </span>
-                  <h4 className="text-base font-['Orbitron'] font-bold text-white truncate tracking-wide group-hover:text-[#ff9a00] transition-colors">
-                    {tournament.name}
-                  </h4>
-                </div>
-                
-                <div className="text-right shrink-0">
-                  <span className="block text-[10px] text-[#4e5d78] font-bold uppercase tracking-wider">Prize Pool</span>
-                  <span className="text-sm font-black font-['Orbitron'] text-[#ffaa00] tracking-wide">
-                    ₹{tournament.prizePool.toLocaleString()}
-                  </span>
-                </div>
+      
+              <div className="grid grid-cols-2 gap-4">
+      
+                {processedTournaments.map((tournament) => (
+      
+                  <TournamentCard key={tournament.id} tournament={tournament} />
+      
+                ))}
+      
               </div>
-
-              <div className="border-t border-[#141822] pt-3 mt-2 flex justify-between items-center text-xs">
-                <div className="space-y-0.5">
-                  <span className="block text-[10px] text-[#4e5d78] font-bold uppercase tracking-wider">Operational Window</span>
-                  <span className="font-semibold text-[#8090a0]">
-                    {tournament.startDate.toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                    })} • {tournament.startDate.toLocaleTimeString(undefined, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </div>
-
-                <div className="text-right flex items-center gap-4">
-                  <div className="space-y-0.5">
-                    <span className="block text-[10px] text-[#4e5d78] font-bold uppercase tracking-wider">Slot Allocation</span>
-                    <span className="font-['Orbitron'] font-bold text-white text-right block">
-                      {tournament.players} Max
-                  </span>
-                  </div>
-                  
-                  <div className="space-y-0.5 border-l border-[#141822] pl-3">
-                    <span className="block text-[10px] text-[#4e5d78] font-bold uppercase tracking-wider">Ticket Fee</span>
-                    <span className="font-bold text-red-400 font-['Orbitron']">
-                      ₹{tournament.entryFee}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
+      
+            ) : (
         <div className="text-center py-16 bg-[#0a0c10] border border-[#1e2330] rounded-lg">
           <p className="text-sm font-bold uppercase tracking-widest text-[#4e5d78]">
             📡 No Premium Operations Registered Inside Parameters

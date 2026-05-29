@@ -1,25 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import Link from "next/link";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { toast } from "react-hot-toast";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loading1, setLoading1] = useState(false);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
+  const [loadingGuest, setLoadingGuest] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
 
     try {
@@ -32,30 +28,31 @@ export function LoginForm() {
       const data = await response.json();
 
       if (response.status === 403) {
-        toast.error(data.error)
+        toast.error(data.error || "Verification sequence incomplete");
         window.location.href = `/verifyEmail?email=${encodeURIComponent(email)}`;
         return;
       }
 
       if (!response.ok) {
-        toast.error(data.error || "Login failed");
+        toast.error(data.error || "Authentication module failure");
         return;
       }
-      toast.success(data.message)
+
+      toast.success(data.message || "Access clearance granted");
       window.location.href = "/dashboard";
     } catch (err) {
       console.error(err);
-      toast.error(err.message || "An unexpected error occurred");
+      toast.error(err.message || "Network grid connection error");
     } finally {
       setLoading(false);
     }
   };
+
   const handleGoogleLogin = async () => {
-    setLoading1(true);
+    setLoadingGoogle(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-
       const idToken = await user.getIdToken(true);
 
       const res = await fetch("/api/auth/googleAuth", {
@@ -66,94 +63,162 @@ export function LoginForm() {
 
       const data = await res.json();
 
-      if (!res.ok) toast.error(data.error);
-      
-      toast.success("Google Login Successfull")
-      setLoading1(false);
+      if (!res.ok) {
+        toast.error(data.error || "Cross-platform authentication failure");
+        return;
+      }
+
+      toast.success("Google link sequence authorized");
       window.location.href = "/dashboard";
     } catch (err) {
       console.error(err);
-      toast.error(data.error);
+      toast.error(err.message || "Google routing system bypass terminated");
+    } finally {
+      setLoadingGoogle(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    setLoadingGuest(true);
+    try {
+      const res = await fetch("/api/auth/guest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Failed to provision localized terminal credentials");
+        return;
+      }
+
+      toast.success("Temporary baseline credentials deployed");
+      window.location.href = "/dashboard";
+    } catch (err) {
+      console.error(err);
+      toast.error("An error occurred during sandbox profile initialization");
+    } finally {
+      setLoadingGuest(false);
     }
   };
 
   return (
-    <Card className="p-6 border-border">
+    <div className="w-full max-w-md mx-auto p-5 bg-[#0a0c10] border border-[#1e2330] rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.4)] font-['Rajdhani'] text-[#d0d5df]">
+      
+      {/* Tactical Authentication Header */}
+      <div className="border-b border-[#141822] pb-4 mb-5">
+        <h3 className="text-lg font-bold font-['Orbitron'] tracking-wider text-[#ffaa00] uppercase">
+          🔒 Sector Authentication
+        </h3>
+        <p className="text-[11px] text-[#4e5d78] font-bold uppercase tracking-wide mt-0.5">
+          Provide baseline operator access keys to link account profiles
+        </p>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">Email</label>
-          <Input
+        {/* Email Terminal Field */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold font-['Orbitron'] uppercase tracking-widest text-[#8090a0]">
+            Identity Matrix // Email
+          </label>
+          <input
             type="email"
             placeholder="your@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            disabled={loading || loadingGoogle || loadingGuest}
+            className="w-full px-4 py-2 bg-[#07080b] border border-[#1e2330] rounded text-[#d0d5df] placeholder-[#4e5d78]/60 text-sm font-semibold tracking-wide focus:outline-none focus:border-[#ff9a00]/50 transition-colors disabled:opacity-50"
             required
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Password</label>
-          <Input
+        {/* Password Field */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold font-['Orbitron'] uppercase tracking-widest text-[#8090a0]">
+            Access Key // Password
+          </label>
+          <input
             type="password"
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            disabled={loading || loadingGoogle || loadingGuest}
+            className="w-full px-4 py-2 bg-[#07080b] border border-[#1e2330] rounded text-[#d0d5df] placeholder-[#4e5d78]/60 text-sm font-semibold tracking-wide focus:outline-none focus:border-[#ff9a00]/50 transition-colors disabled:opacity-50"
             required
           />
         </div>
 
-        {error && (
-          <div className="text-destructive text-sm bg-destructive/10 p-3 rounded">
-            {error}
-          </div>
-        )}
+        {/* Primary Action Sequence Submit Button */}
+        <button
+          type="submit"
+          disabled={loading || loadingGoogle || loadingGuest}
+          className="w-full flex justify-center items-center h-10 bg-[#ff9a00]/5 border border-[#ff9a00]/30 hover:border-[#ff9a00] text-[#ffaa00] hover:text-white hover:bg-[#ff9a00]/15 font-['Orbitron'] font-black text-xs uppercase tracking-widest rounded transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? (
+            <span className="flex items-center gap-2 tracking-widest">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#ffaa00]" /> Processing Clearance...
+            </span>
+          ) : (
+            "Initialize Connection"
+          )}
+        </button>
 
-        <Button type="submit" className="w-full" disabled={loading}>
-           {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : null}
-          {loading ? "" : "Sign In"}
-        </Button>
-
-        <div className="relative my-4">
+        {/* Divider Layout Node */}
+        <div className="relative my-6 py-2">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
+            <div className="w-full border-t border-[#141822]" />
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-card text-muted-foreground">
-              Or continue with
+          <div className="relative flex justify-center text-[10px] font-bold uppercase tracking-widest">
+            <span className="px-3 bg-[#0a0c10] text-[#4e5d78]">
+              Cross-Platform Uplink Vectors
             </span>
           </div>
         </div>
-        <div className="flex w-full gap-2">
-          <Button
+
+        {/* Alternative Platform Link Blocks */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
             type="button"
-            variant="outline"
-            className="w-1/2"
-            disabled={loading1}
             onClick={handleGoogleLogin}
+            disabled={loading || loadingGoogle || loadingGuest}
+            className="flex justify-center items-center h-9 bg-[#07080b] border border-[#1e2330] hover:border-[#8090a0]/40 text-[#8090a0] hover:text-white font-['Orbitron'] font-bold text-[10px] uppercase tracking-wider rounded transition-all duration-150 cursor-pointer disabled:opacity-50"
           >
-            {loading1 ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : null}
-            {loading1 ? "" : "Continue With Google"}
-          </Button>
-          <Button
+            {loadingGoogle ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              "Google Link"
+            )}
+          </button>
+
+          <button
             type="button"
-            variant="outline"
-            className="w-1/2 bg-transparent hover:bg-yellow-600"
+            onClick={handleGuestLogin}
+            disabled={loading || loadingGoogle || loadingGuest}
+            className="flex justify-center items-center h-9 bg-[#ff6b00]/5 border border-[#ff6b00]/15 hover:border-[#ff6b00]/40 text-red-400 font-['Orbitron'] font-bold text-[10px] uppercase tracking-wider rounded transition-all duration-150 cursor-pointer disabled:opacity-50"
           >
-            Guest Account
-          </Button>
+            {loadingGuest ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              "Guest Instance"
+            )}
+          </button>
         </div>
 
-        <p className="text-center text-sm text-muted-foreground">
-          Don't have an account?{" "}
-          <Link href="/signup" className="text-primary hover:underline">
-            Sign up
-          </Link>
-        </p>
+        {/* Navigation Routing Footnote */}
+        <div className="text-center pt-3 border-t border-[#141822]/60 mt-2">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#4e5d78]">
+            Unregistered Identity Module?{" "}
+            <Link 
+              href="/signup" 
+              className="text-[#ffaa00] hover:text-white underline underline-offset-4 transition-colors ml-1 font-extrabold"
+            >
+              Provision Account Profile
+            </Link>
+          </p>
+        </div>
+
       </form>
-    </Card>
+    </div>
   );
 }

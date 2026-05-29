@@ -4,108 +4,131 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Gaming/Esports Dark Theme */
-  --background: oklch(0.08 0 0);
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.12 0 0);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.12 0 0);
-  --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.5 0.3 280);
-  --primary-foreground: oklch(0.95 0 0);
-  --secondary: oklch(0.35 0.25 20);
-  --secondary-foreground: oklch(0.95 0 0);
-  --accent: oklch(0.6 0.25 40);
-  --accent-foreground: oklch(0.08 0 0);
-  --muted: oklch(0.3 0 0);
-  --muted-foreground: oklch(0.65 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.95 0 0);
-  --border: oklch(0.2 0 0);
-  --input: oklch(0.15 0 0);
-  --ring: oklch(0.5 0.3 280);
-  --chart-1: oklch(0.6 0.25 40);
-  --chart-2: oklch(0.5 0.3 280);
-  --chart-3: oklch(0.55 0.28 320);
-  --chart-4: oklch(0.65 0.2 30);
-  --chart-5: oklch(0.45 0.25 270);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.1 0 0);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.5 0.3 280);
-  --sidebar-primary-foreground: oklch(0.95 0 0);
-  --sidebar-accent: oklch(0.6 0.25 40);
-  --sidebar-accent-foreground: oklch(0.08 0 0);
-  --sidebar-border: oklch(0.2 0 0);
-  --sidebar-ring: oklch(0.5 0.3 280);
+  /* Esports/Gaming Theme - LIGHT MODE DEFAULT (Clean Industrial Slate) */
+  --background: oklch(0.97 0.01 240);
+  --foreground: oklch(0.14 0.02 240);
+  
+  --card: oklch(0.93 0.015 240);
+  --card-foreground: oklch(0.16 0.02 240);
+  
+  --popover: oklch(0.93 0.015 240);
+  --popover-foreground: oklch(0.16 0.02 240);
+  
+  /* Primary Hyper-Orange Accent (Matches #ff6b00 / #ff9a00 spectrum) */
+  --primary: oklch(0.63 0.26 42);
+  --primary-foreground: oklch(0.99 0 0);
+  
+  /* Tactical Secondary Gold-Orange (Matches #ffaa00) */
+  --secondary: oklch(0.72 0.22 55);
+  --secondary-foreground: oklch(0.08 0 0);
+  
+  /* Subtle Dark Metallic Borders & Accents */
+  --accent: oklch(0.25 0.03 240);
+  --accent-foreground: oklch(0.99 0 0);
+  
+  --muted: oklch(0.88 0.01 240);
+  --muted-foreground: oklch(0.45 0.02 240);
+  
+  /* High-Alert Integrity Indicators (Anti-Cheat / Live Telemetry Green) */
+  --success: oklch(0.68 0.21 145);
+  --destructive: oklch(0.58 0.23 28);
+  --destructive-foreground: oklch(0.99 0 0);
+  
+  --border: oklch(0.84 0.01 240);
+  --input: oklch(0.89 0.01 240);
+  --ring: oklch(0.63 0.26 42);
+  
+  --radius: 0.25rem; /* Sharp, aggressive tactical corners instead of round pills */
+  
+  --sidebar: oklch(0.93 0.015 240);
+  --sidebar-foreground: oklch(0.16 0.02 240);
+  --sidebar-primary: oklch(0.63 0.26 42);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.25 0.03 240);
+  --sidebar-accent-foreground: oklch(0.99 0 0);
+  --sidebar-border: oklch(0.84 0.01 240);
+  --sidebar-ring: oklch(0.63 0.26 42);
 }
 
 .dark {
-  --background: oklch(0.08 0 0);
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.12 0 0);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.12 0 0);
-  --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.5 0.3 280);
-  --primary-foreground: oklch(0.95 0 0);
-  --secondary: oklch(0.35 0.25 20);
+  /* Esports/Gaming Theme - DARK MODE OVERRIDES (Pitch Obsidian & Amber Gloom) */
+  --background: oklch(0.06 0.01 240); /* Matches deep #07080b grid matrix */
+  --foreground: oklch(0.88 0.02 240); /* Crisp #d0d5df readability */
+  
+  --card: oklch(0.09 0.015 240); /* Deep #0a0c10 structural surfaces */
+  --card-foreground: oklch(0.95 0.01 240);
+  
+  --popover: oklch(0.09 0.015 240);
+  --popover-foreground: oklch(0.95 0.01 240);
+  
+  --primary: oklch(0.63 0.26 42); /* #ff6b00 core laser signature */
+  --primary-foreground: oklch(0.99 0 0);
+  
+  --secondary: oklch(0.32 0.08 42); /* Matte dark orange tactical container fill */
   --secondary-foreground: oklch(0.95 0 0);
-  --accent: oklch(0.6 0.25 40);
-  --accent-foreground: oklch(0.08 0 0);
-  --muted: oklch(0.3 0 0);
-  --muted-foreground: oklch(0.65 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  
+  --accent: oklch(0.72 0.22 55); /* #ffaa00 secondary alignment highlights */
+  --accent-foreground: oklch(0.06 0 0);
+  
+  --muted: oklch(0.16 0.02 240); /* Dark #141822 grid partitions */
+  --muted-foreground: oklch(0.58 0.02 240); /* Clean structural #8090a0 text */
+  
+  --success: oklch(0.68 0.21 145); /* Live anti-cheat telemetry green */
+  --destructive: oklch(0.58 0.23 28);
   --destructive-foreground: oklch(0.95 0 0);
-  --border: oklch(0.2 0 0);
-  --input: oklch(0.15 0 0);
-  --ring: oklch(0.5 0.3 280);
-  --chart-1: oklch(0.6 0.25 40);
-  --chart-2: oklch(0.5 0.3 280);
-  --chart-3: oklch(0.55 0.28 320);
-  --chart-4: oklch(0.65 0.2 30);
-  --chart-5: oklch(0.45 0.25 270);
-  --sidebar: oklch(0.1 0 0);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.5 0.3 280);
-  --sidebar-primary-foreground: oklch(0.95 0 0);
-  --sidebar-accent: oklch(0.6 0.25 40);
-  --sidebar-accent-foreground: oklch(0.08 0 0);
-  --sidebar-border: oklch(0.2 0 0);
-  --sidebar-ring: oklch(0.5 0.3 280);
+  
+  --border: oklch(0.18 0.02 240); /* High-precision #1e2330 layout borders */
+  --input: oklch(0.14 0.02 240);
+  --ring: oklch(0.63 0.26 42);
+  
+  --sidebar: oklch(0.08 0.015 240);
+  --sidebar-foreground: oklch(0.88 0.02 240);
+  --sidebar-primary: oklch(0.63 0.26 42);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.18 0.02 240);
+  --sidebar-accent-foreground: oklch(0.72 0.22 55);
+  --sidebar-border: oklch(0.18 0.02 240);
+  --sidebar-ring: oklch(0.63 0.26 42);
 }
 
 @theme inline {
-  --font-sans: "Geist", "Geist Fallback";
-  --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --font-sans: "Rajdhani", "Geist", sans-serif;
+  --font-display: "Orbitron", "Geist Mono", monospace;
+  
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  
+  --color-success: var(--success);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
+  
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -121,39 +144,38 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans tracking-wide transition-colors duration-200 antialiased;
+  }
+  h1, h2, h3, h4, .font-orbitron {
+    @apply font-display tracking-wider uppercase;
   }
 }
 
-/* app/globals.css */
-
 @layer base {
-  /* 1. Global scrollbar for Chrome, Edge, Safari, and Opera */
+  /* Tactical Custom Webkit Scrollbars matching #07080b / #ff6b00 layout elements */
   ::-webkit-scrollbar {
-    width: 15px; /* Slightly wider for the main page */
-    height: 10px; /* For horizontal scroll */
+    width: 10px;
+    height: 10px;
   }
 
   ::-webkit-scrollbar-track {
-    background: var(--background); /* Matches your deep dark theme */
+    background: var(--background);
   }
 
   ::-webkit-scrollbar-thumb {
-    /* Uses your primary OKLCH color with 30% transparency */
-    background: color-mix(in oklch, var(--primary), transparent 40%);
-    border-radius: 100px;
-    border: 2px solid var(--background); /* Creates a "floating" gap effect */
+    background: color-mix(in oklch, var(--primary), transparent 50%);
+    border-radius: 2px;
+    border: 2px solid var(--background);
     background-clip: content-box;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    /* Brightens to full primary color on hover */
     background: var(--primary);
   }
 
-  /* 2. Global scrollbar for Firefox */
+  /* Global Firefox scrollbars */
   * {
     scrollbar-width: thin;
-    scrollbar-color: color-mix(in oklch, var(--primary), transparent 40%) var(--background);
+    scrollbar-color: color-mix(in oklch, var(--primary), transparent 50%) var(--background);
   }
 }
