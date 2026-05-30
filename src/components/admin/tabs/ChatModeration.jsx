@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { MessageSquare, ShieldAlert, Search, Filter, Check, Trash2, Clock } from "lucide-react"
 
 export function ChatModerationTab() {
   const [filterStatus, setFilterStatus] = useState("all")
@@ -47,79 +48,121 @@ export function ChatModerationTab() {
   })
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-bold">Chat Moderation</h3>
-        <span className="px-3 py-1 bg-red-900/30 text-red-400 rounded-full text-sm font-semibold">
-          {filteredMessages.length} Flagged
+    <div className="space-y-6 font-sans text-foreground">
+      
+      {/* Sector Control Header */}
+      <div className="flex justify-between items-center border-b border-border pb-4">
+        <div>
+          <h3 className="text-xl font-bold font-display tracking-wider text-primary flex items-center gap-2 uppercase">
+            <MessageSquare className="h-5 w-5 text-primary shrink-0" />
+            Comms Moderation Queue
+          </h3>
+          <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-widest mt-1">
+            Intercepted telemetry streams // anomaly enforcement protocols
+          </p>
+        </div>
+        
+        <span className="px-2.5 py-0.5 bg-destructive/10 border border-destructive/20 text-destructive font-display text-[10px] font-black tracking-widest uppercase rounded-sm animate-pulse">
+          {filteredMessages.length} Threats Flagged
         </span>
       </div>
 
-      {/* Filters */}
-      <div className="grid md:grid-cols-2 gap-4 p-4 bg-card/50 rounded-lg border border-border/50">
-        <Input
-          placeholder="Search by user or reason..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="bg-background/50"
-        />
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="bg-background/50">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Messages</SelectItem>
-            <SelectItem value="flagged">Flagged</SelectItem>
-            <SelectItem value="reviewed">Reviewed</SelectItem>
-            <SelectItem value="removed">Removed</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Embedded Filtering System Deck */}
+      <div className="grid md:grid-cols-2 gap-3 bg-card/40 p-3 border border-border/80 rounded-sm">
+        <div className="relative flex items-center">
+          <Search className="absolute left-3 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
+          <Input
+            placeholder="Query violator moniker or infraction key..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 bg-background border border-border rounded-sm text-foreground placeholder-muted-foreground text-sm font-semibold tracking-wide focus-visible:ring-primary/50 focus-visible:border-primary/50 h-9"
+          />
+        </div>
+
+        <div className="relative flex items-center">
+          <Filter className="absolute left-3 h-3.5 w-3.5 text-muted-foreground/60 pointer-events-none z-10" />
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="bg-background border border-border rounded-sm text-xs font-bold uppercase tracking-wider text-muted-foreground h-9 pl-9 cursor-pointer focus:ring-0 focus:ring-offset-0">
+              <SelectValue placeholder="Filter Operational State" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border border-border rounded-sm text-xs uppercase font-display font-bold">
+              <SelectItem value="all" className="cursor-pointer">All Intercepts</SelectItem>
+              <SelectItem value="flagged" className="cursor-pointer">Awaiting Review</SelectItem>
+              <SelectItem value="reviewed" className="cursor-pointer">Cleared Safe</SelectItem>
+              <SelectItem value="removed" className="cursor-pointer">Purged Matrix</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Flagged Messages Cards */}
-      <div className="space-y-4">
+      {/* Flagged Telemetry Stream List */}
+      <div className="space-y-3">
         {filteredMessages.map((msg) => (
           <Card
             key={msg.id}
-            className="p-4 border-border/50 bg-card/50 hover:bg-card/70 transition-colors duration-200"
+            className="p-4 border-border/80 bg-card/30 rounded-sm hover:border-primary/20 transition-all duration-150 group"
           >
             <div className="space-y-3">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold text-lg">{msg.user}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Flagged for: <span className="text-orange-400 font-semibold">{msg.reason}</span>
+                  <p className="font-display font-bold text-sm text-white group-hover:text-primary transition-colors tracking-wide uppercase">
+                    {msg.user}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest mt-0.5">
+                    Trigger Vector: <span className="text-accent font-black">{msg.reason}</span>
                   </p>
                 </div>
-                <div className="flex gap-2">
+                
+                <div className="flex gap-2 items-center">
                   <span
-                    className={`px-2 py-1 rounded text-xs font-semibold ${
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 border text-[9px] font-black font-display tracking-widest uppercase rounded-sm ${
                       msg.severity === "high"
-                        ? "bg-red-900/30 text-red-400"
+                        ? "bg-destructive/5 border-destructive/20 text-destructive"
                         : msg.severity === "medium"
-                          ? "bg-orange-900/30 text-orange-400"
-                          : "bg-yellow-900/30 text-yellow-400"
+                          ? "bg-secondary/5 border-secondary/20 text-accent"
+                          : "bg-info/5 border-info/20 text-info"
                     }`}
                   >
-                    {msg.severity.toUpperCase()}
+                    Threat: {msg.severity}
                   </span>
-                  <span className="px-2 py-1 bg-red-900/20 text-red-400 rounded text-xs font-semibold">FLAGGED</span>
+                  <span className="px-2 py-0.5 bg-destructive/10 border border-destructive/20 text-destructive font-mono text-[9px] font-black tracking-widest uppercase rounded-sm">
+                    Flagged
+                  </span>
                 </div>
               </div>
 
-              <div className="bg-background/50 p-3 rounded border border-border/50">
-                <p className="text-sm text-foreground/90 italic">"{msg.content}"</p>
+              {/* Intercepted Content Block */}
+              <div className="bg-background/80 p-3 border border-border/50 rounded-sm font-mono text-xs text-foreground/90 relative">
+                <span className="absolute right-2 top-1 text-[8px] text-muted-foreground/40 uppercase tracking-widest select-none">
+                  Raw Feed
+                </span>
+                <p className="italic">"{msg.content}"</p>
               </div>
 
-              <div className="flex gap-2 pt-2">
-                <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                  Approve
+              {/* Tactical Enforcement Directives */}
+              <div className="flex gap-2 pt-1">
+                <Button 
+                  size="sm" 
+                  className="h-7 bg-success/10 border border-success/30 text-success hover:bg-success hover:text-white text-[10px] uppercase font-display tracking-wider rounded-sm cursor-pointer transition-all duration-150 flex items-center gap-1"
+                >
+                  <Check className="h-3 w-3" />
+                  Dismiss / Clear
                 </Button>
-                <Button size="sm" variant="destructive">
-                  Remove & Warn User
+                <Button 
+                  size="sm" 
+                  variant="destructive" 
+                  className="h-7 bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive hover:text-white text-[10px] uppercase font-display tracking-wider rounded-sm cursor-pointer transition-all duration-150 flex items-center gap-1"
+                >
+                  <ShieldAlert className="h-3 w-3" />
+                  Purge & Warn
                 </Button>
-                <Button size="sm" variant="outline">
-                  Review Later
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-7 border-border text-muted-foreground hover:text-white hover:bg-card text-[10px] uppercase font-display tracking-wider rounded-sm cursor-pointer flex items-center gap-1"
+                >
+                  <Clock className="h-3 w-3" />
+                  Hold Sequence
                 </Button>
               </div>
             </div>
@@ -127,9 +170,15 @@ export function ChatModerationTab() {
         ))}
       </div>
 
+      {/* Empty Queue State Block */}
       {filteredMessages.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No flagged messages in this view</p>
+        <div className="text-center py-16 bg-card/20 border border-border rounded-sm">
+          <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+            📡 Comms channels absolute zero anomalies reported
+          </p>
+          <p className="text-xs text-muted-foreground/60 uppercase tracking-wider mt-1">
+            No dynamic packets match current validation filters or search vectors
+          </p>
         </div>
       )}
     </div>
