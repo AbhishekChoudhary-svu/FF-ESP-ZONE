@@ -11,7 +11,7 @@ export default function VerifyEmailPage() {
   const [otp, setOtp] = useState("")
   const [loading, setLoading] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
-  const [timer, setTimer] = useState(60)
+  const [timer, setTimer] = useState(600)
 
   useEffect(() => {
     if (timer === 0) return

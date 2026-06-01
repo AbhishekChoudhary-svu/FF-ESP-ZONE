@@ -3,6 +3,7 @@
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { useRouter } from "next/navigation";
 import { createContext, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const MyContext = createContext();
 
@@ -21,6 +22,26 @@ export const ThemeProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(true);
 
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const publicRoutes = [
+      "/login",
+      "/signup",
+      "/verifyEmail",
+      "/forgotPassword",
+    ];
+
+    if (publicRoutes.some((route) => pathname.startsWith(route))) {
+      setLoading(false);
+      return;
+    }
+
+    fetchUser();
+    fetchActivePlayers();
+    fetchActiveTeams();
+  }, [pathname]);
+
   const fetchUser = async () => {
     try {
       const res = await fetch("/api/users", {
@@ -30,7 +51,7 @@ export const ThemeProvider = ({ children }) => {
 
       if (!res.ok) {
         setUser(null);
-        router.push("/login");
+        setLoading(false);
         return;
       }
 
@@ -126,8 +147,6 @@ export const ThemeProvider = ({ children }) => {
     if (data.success) setTeamRequests(data.requests);
   };
 
- 
-
   useEffect(() => {
     fetchUser();
     fetchActivePlayers();
@@ -152,7 +171,7 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [user, player, team]);
 
-    useEffect(() => {
+  useEffect(() => {
     if (player?._id) {
       fetchTeam(player._id);
       fetchPlayerRequests(player._id);
