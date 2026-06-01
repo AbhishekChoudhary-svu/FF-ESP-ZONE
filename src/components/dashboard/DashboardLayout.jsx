@@ -1,14 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FreeTournamentsTab } from "./tabs/FreeTournament";
 import { PaidTournamentsTab } from "./tabs/PaidTournament";
 import { PlayerRecruitmentTab } from "./tabs/Recruitment";
 import { OfficialEventsTab } from "./tabs/OfficialTournament";
 import { WorldChatTab } from "./tabs/WorldChat";
 import { UserProfile } from "./UserProfile";
-import { EditProfileForm } from "@/components/forms/EditProfile";
-import { CreateTournamentForm } from "@/components/forms/CreateTournament";
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
 
@@ -36,6 +34,12 @@ export function DashboardLayout({ user }) {
       console.error("Unexpected error during logout:", err);
     }
   };
+   useEffect(() => {
+    window.scrollTo({
+      top: 500,
+      behavior: "smooth", 
+    });
+  }, [activeTab]);
 
   const tabs = [
     { id: "recruitment", label: "Recruitment", icon: "👥" },
@@ -119,25 +123,6 @@ export function DashboardLayout({ user }) {
               <UserProfile
                 user={user}
                 onEditClick={() => setShowEditProfile(true)}
-              />
-            </div>
-          )}
-
-          {/* Inline Edit Form Overlay Wrapper */}
-          {showEditProfile && (
-            <div className="mb-8 animate-fade-in duration-300 relative p-0.5 rounded-xl border border-[#2a2e3a] bg-[#0a0c10]">
-              <EditProfileForm
-                user={user}
-                onClose={() => setShowEditProfile(false)}
-              />
-            </div>
-          )}
-
-          {/* Creation Layout Form Wrapper */}
-          {showCreateTournament && (
-            <div className="mb-8 animate-fade-in duration-300 relative p-0.5 rounded-xl border border-[#2a2e3a] bg-[#0a0c10]">
-              <CreateTournamentForm
-                onClose={() => setShowCreateTournament(false)}
               />
             </div>
           )}

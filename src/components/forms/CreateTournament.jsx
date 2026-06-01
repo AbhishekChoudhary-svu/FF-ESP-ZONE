@@ -52,17 +52,17 @@ export function CreateTournamentForm({ onClose }) {
   };
 
   return (
-    <div className="p-6 bg-[#0a0c10] border border-[#1e2330] rounded-lg max-h-[80vh] overflow-y-auto font-['Rajdhani'] tab-scrollbar shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+    <div className="p-6 bg-[#0a0c10] border border-[#1e2330] rounded-lg  font-['Rajdhani'] tab-scrollbar shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
       
       {/* Form Context Identity */}
-      <div className="mb-6 border-b border-[#141822] pb-3">
+      {/* <div className="mb-6 border-b border-[#141822] pb-3">
         <h3 className="text-lg font-['Orbitron'] font-bold text-white tracking-wider uppercase">
           🏆 Initialize New Bracket
         </h3>
         <p className="text-xs text-[#4e5d78] font-semibold uppercase tracking-wide mt-0.5">
           Fill configuration fields to deploy arena database instance
         </p>
-      </div>
+      </div> */}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         

@@ -2,7 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeProvider";
 import { Toaster } from "react-hot-toast";
-
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-   title: "FF-ESP-ZONE | Free Fire Esports Platform",
-  description: "Join tournaments, recruit teammates, and dominate the Free Fire esports scene",
+  title: "FF-ESP-ZONE | Free Fire Esports Platform",
+  description:
+    "Join tournaments, recruit teammates, and dominate the Free Fire esports scene",
 };
 
 export default function RootLayout({ children }) {
@@ -24,10 +25,16 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      > <ThemeProvider>
-        {children}
-        </ThemeProvider>
-        <Toaster position="top-right" />
+      >
+        <GoogleOAuthProvider
+          clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+        >
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
+
+          <Toaster position="top-right" />
+        </GoogleOAuthProvider>
       </body>
     </html>
   );

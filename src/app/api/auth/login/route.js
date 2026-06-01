@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server"
-import { signInWithEmailAndPassword } from "firebase/auth"
-import { auth } from "@/lib/firebase" 
+import bcrypt from "bcryptjs"
 import dbConnect from "@/lib/dbConnect"
 import { User } from "@/models/users.model"
+import { signSession } from "@/lib/session"
+import { checkLoginLimit, resetLoginLimit } from "@/lib/rateLimit"
 
 export async function POST(req) {
+  const ip = req.headers.get("x-forwarded-for") ?? 
+             req.headers.get("x-real-ip") ?? 
+             "unknown"
+
   try {
+    // 1. Rate limit check first — before any DB query
+    await checkLoginLimit(ip)
+
     const { email, password } = await req.json()
     if (!email || !password) {
       return NextResponse.json(
@@ -14,23 +22,28 @@ export async function POST(req) {
       )
     }
 
-    let firebaseUser
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password)
-      firebaseUser = userCredential.user
-    } catch (err) {
+    await dbConnect()
+
+    // 2. Always run bcrypt even if user not found — fixes timing attack
+    //    Attacker can't tell if email exists by measuring response time
+    const user = await User.findOne({ email })
+    const fakeHash = "$2a$12$zHBBgCGnGBCghkAlbFLOXuPDDSWaFRlBpb6py9DfwFY1AiPXsVFBe"
+    const passwordMatch = await bcrypt.compare(
+      password,
+      user?.password || fakeHash  // always runs bcrypt, same timing either way
+    )
+
+    if (!user || !passwordMatch) {
       return NextResponse.json(
-        { error: err.message || "Invalid credentials" },
+        { error: "Invalid credentials" },
         { status: 401 }
       )
     }
 
-    await dbConnect()
-    const user = await User.findOne({ uid: firebaseUser.uid })
-    if (!user) {
+    if (user.provider === "google") {
       return NextResponse.json(
-        { error: "User not found in database" },
-        { status: 404 }
+        { error: "This account uses Google sign-in" },
+        { status: 401 }
       )
     }
 
@@ -41,31 +54,51 @@ export async function POST(req) {
       )
     }
 
+    if (user.isBanned) {
+      return NextResponse.json(
+        { error: "Account banned" },
+        { status: 403 }
+      )
+    }
+
+    // 3. Successful login — reset rate limit for this IP
+    await resetLoginLimit(ip)
+    await User.updateOne({ uid: user.uid }, { lastLoginAt: new Date() })
+
     const session = {
       uid: user.uid,
       email: user.email,
-      role: user.role || "user",
-      emailVerified: user.emailVerified,
+      sessionVersion: user.sessionVersion ?? 1,
     }
 
-    const res = NextResponse.json({ success: true, user ,message : "Login Successfull" })
+    const res = NextResponse.json({
+      success: true,
+      message: "Login successful",
+      user: { uid: user.uid, email: user.email, username: user.username },
+    })
 
-    // Set HTTP-only secure cookie
     res.cookies.set({
       name: "session",
-      value: JSON.stringify(session),
+      value: signSession(session),
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 60 * 60 * 24 * 3, // 3 days
+      maxAge: 60 * 60 * 24 * 3,
       sameSite: "lax",
     })
 
     return res
   } catch (err) {
-    console.error("Login API error:", err)
+    // Rate limit error
+    if (err.message.includes("Too many attempts")) {
+      return NextResponse.json(
+        { error: err.message },
+        { status: 429 }
+      )
+    }
+    console.error("Login error:", err)
     return NextResponse.json(
-      { error: err.message || "Server error" },
+      { error: "Server error" },
       { status: 500 }
     )
   }

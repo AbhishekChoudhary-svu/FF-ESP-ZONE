@@ -3,8 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { GoogleLogin } from "@react-oauth/google";
 import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -67,27 +66,23 @@ export function SignupForm() {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSuccess = async (credentialResponse) => {
     setLoadingGoogle(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      const idToken = await user.getIdToken(true);
-
       const res = await fetch("/api/auth/googleAuth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
+        body: JSON.stringify({ idToken: credentialResponse.credential }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Cross-platform authorization dropped");
+        toast.error(data.error || "Cross-platform authentication failure");
         return;
       }
 
-      toast.success("Google registration linked successfully");
+      toast.success("Google link sequence authorized");
       window.location.href = "/dashboard";
     } catch (err) {
       console.error(err);
@@ -95,6 +90,11 @@ export function SignupForm() {
     } finally {
       setLoadingGoogle(false);
     }
+  };
+
+  const handleGoogleError = () => {
+    toast.error("Google login was cancelled or failed");
+    setLoadingGoogle(false);
   };
 
   const handleGuestLogin = async () => {
@@ -252,18 +252,33 @@ export function SignupForm() {
 
         {/* Alternative Processing Options */}
         <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            disabled={loading || loadingGoogle || loadingGuest}
-            className="flex justify-center items-center h-9 bg-[#07080b] border border-[#1e2330] hover:border-[#8090a0]/40 text-[#8090a0] hover:text-white font-['Orbitron'] font-bold text-[10px] uppercase tracking-wider rounded transition-all duration-150 cursor-pointer disabled:opacity-50"
-          >
-            {loadingGoogle ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              "Google Link"
+            {/* Google — styled button with invisible GoogleLogin overlay */}
+          <div className="relative">
+            <button
+              type="button"
+              disabled={loading || loadingGoogle || loadingGuest}
+              className="w-full flex justify-center items-center h-9 bg-[#07080b] border border-[#1e2330] hover:border-[#8090a0]/40 text-[#8090a0] hover:text-white font-['Orbitron'] font-bold text-[10px] uppercase tracking-wider rounded transition-all duration-150 pointer-events-none disabled:opacity-50"
+            >
+              {loadingGoogle ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                "Google Link"
+              )}
+            </button>
+            {/* Invisible GoogleLogin sits on top and captures the click */}
+            {!loading && !loadingGoogle && !loadingGuest && (
+              <div className="absolute inset-0 opacity-0 overflow-hidden rounded cursor-pointer">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  useOneTap={false}
+                  type="standard"
+                  size="large"
+                  width="300"
+                />
+              </div>
             )}
-          </button>
+          </div>
 
           <button
             type="button"

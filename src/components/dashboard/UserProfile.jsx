@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dialog";
 import { EditProfileForm } from "@/components/forms/EditProfile";
 import MyContext from "@/context/ThemeProvider";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -70,7 +69,13 @@ function StatCell({ label, value, accent = false }) {
 }
 
 /** Orange-gradient primary action button */
-function PrimaryBtn({ children, onClick, type = "button", className = "", disabled = false }) {
+function PrimaryBtn({
+  children,
+  onClick,
+  type = "button",
+  className = "",
+  disabled = false,
+}) {
   return (
     <button
       type={type}
@@ -90,7 +95,13 @@ function PrimaryBtn({ children, onClick, type = "button", className = "", disabl
 }
 
 /** Ghost border button (secondary) */
-function GhostBtn({ children, onClick, type = "button", className = "", disabled = false }) {
+function GhostBtn({
+  children,
+  onClick,
+  type = "button",
+  className = "",
+  disabled = false,
+}) {
   return (
     <button
       type={type}
@@ -112,14 +123,14 @@ function GhostBtn({ children, onClick, type = "button", className = "", disabled
 function Chip({ children, variant = "orange" }) {
   const styles = {
     orange: "bg-[#ff6b00]/15 text-[#ff8c30] border-[#ff6b00]/30",
-    blue:   "bg-[#63b3ed]/10 text-[#63b3ed] border-[#63b3ed]/25",
-    green:  "bg-[#4ade80]/10 text-[#4ade80] border-[#4ade80]/30",
+    blue: "bg-[#63b3ed]/10 text-[#63b3ed] border-[#63b3ed]/25",
+    green: "bg-[#4ade80]/10 text-[#4ade80] border-[#4ade80]/30",
     yellow: "bg-[#edb438]/12 text-[#edb438] border-[#edb438]/30",
-    red:    "bg-red-500/10 text-red-400 border-red-500/30",
+    red: "bg-red-500/10 text-red-400 border-red-500/30",
   };
   return (
     <span
-      className={`text-[11px] font-bold tracking-wider px-2.5 py-0.5 rounded-[3px] uppercase border ${styles[variant]}`}
+      className={`text-[12px] font-bold tracking-wider px-3 py-0.5 rounded-[3px] uppercase border ${styles[variant]}`}
     >
       {children}
     </span>
@@ -155,10 +166,20 @@ function DarkDialog({ open, onOpenChange, trigger, title, children }) {
 
 /* ─── Upload helpers (shared styles) ─────────────────────────────────── */
 
-function UploadZone({ preview, onFile, accept, label, circle = false, disabled = false, onRemove }) {
+function UploadZone({
+  preview,
+  onFile,
+  accept,
+  label,
+  circle = false,
+  disabled = false,
+  onRemove,
+}) {
   const shape = circle ? "rounded-full w-28 h-28" : "rounded-lg p-6 w-full";
   return (
-    <div className={`relative flex flex-col items-center justify-center border-2 border-dashed border-[#2a2e3a] ${shape} cursor-pointer hover:border-[#ff6b00]/50 transition bg-[#0f1318]`}>
+    <div
+      className={`relative flex flex-col items-center justify-center border-2 border-dashed border-[#2a2e3a] ${shape} cursor-pointer hover:border-[#ff6b00]/50 transition bg-[#0f1318]`}
+    >
       {!preview ? (
         <>
           {circle ? (
@@ -168,22 +189,30 @@ function UploadZone({ preview, onFile, accept, label, circle = false, disabled =
           )}
           <p className="text-[10px] text-[#4a5060] text-center">{label}</p>
         </>
+      ) : circle ? (
+        <img
+          src={preview}
+          className="w-full h-full rounded-full object-cover"
+        />
       ) : (
-        circle
-          ? <img src={preview} className="w-full h-full rounded-full object-cover" />
-          : <img src={preview} className="w-full h-full rounded-lg object-cover" />
+        <img src={preview} className="w-full h-full rounded-lg object-cover" />
       )}
       <input
         type="file"
         accept={accept}
         disabled={disabled}
-        onChange={(e) => e.target.files && onFile(e.target.files[0] ?? e.target.files)}
+        onChange={(e) =>
+          e.target.files && onFile(e.target.files[0] ?? e.target.files)
+        }
         className="absolute inset-0 opacity-0 cursor-pointer"
       />
       {preview && onRemove && (
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
           className="absolute -top-2 -right-2 bg-[#0a0c10] border border-[#2a2e3a] text-[#8090a0] rounded-full p-1 hover:bg-red-500 hover:text-white hover:border-red-500 transition"
         >
           <X className="w-3 h-3" />
@@ -198,85 +227,117 @@ function UploadZone({ preview, onFile, accept, label, circle = false, disabled =
 export function UserProfile() {
   const context = useContext(MyContext);
 
-  const [open, setOpen]           = useState(false);
-  const [open1, setOpen1]         = useState(false);
-  const [openTeam, setOpenTeam]   = useState(false);
-  const [open3, setOpen3]         = useState(false);
-  const [open4, setOpen4]         = useState(false);
-  const [detailOpen, setDetailOpen]       = useState(false);
+  const [open, setOpen] = useState(false);
+  const [open1, setOpen1] = useState(false);
+  const [openTeam, setOpenTeam] = useState(false);
+  const [open3, setOpen3] = useState(false);
+  const [open4, setOpen4] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [teamDetailOpen, setTeamDetailOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
-  const [role, setRole]           = useState("Rusher");
+  const [role, setRole] = useState("Rusher");
   const [isCaptain, setIsCaptain] = useState(false);
-  const [isActive, setIsActive]   = useState(false);
+  const [isActive, setIsActive] = useState(false);
 
-  const [avatar, setAvatar]               = useState(null);
+  const [avatar, setAvatar] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
-  const [clipPhotos, setClipPhotos]             = useState([]);
+  const [clipPhotos, setClipPhotos] = useState([]);
   const [clipPhotoPreviews, setClipPhotoPreviews] = useState([]);
-  const [clipVideo, setClipVideo]               = useState(null);
+  const [clipVideo, setClipVideo] = useState(null);
   const [clipVideoPreview, setClipVideoPreview] = useState(null);
-  const [logo, setLogo]               = useState(null);
+  const [logo, setLogo] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
 
   const [teamName, setTeamName] = useState("");
-  const [tag, setTag]           = useState("");
-  const [status, setStatus]     = useState("active");
-  const [tier, setTier]         = useState("Amateur");
-  const [leaving, setLeaving]   = useState(false);
+  const [tag, setTag] = useState("");
+  const [status, setStatus] = useState("active");
+  const [tier, setTier] = useState("Amateur");
+  const [leaving, setLeaving] = useState(false);
 
   /* ── upload handlers (unchanged logic, same API calls) ── */
   const handleAvatarChange = async (file) => {
     setAvatarPreview(URL.createObjectURL(file));
-    const fd = new FormData(); fd.append("avatar", file);
-    const { success, url } = await (await fetch("/api/uploads/avatar", { method: "POST", body: fd })).json();
+    const fd = new FormData();
+    fd.append("avatar", file);
+    const { success, url } = await (
+      await fetch("/api/uploads/avatar", { method: "POST", body: fd })
+    ).json();
     if (success) setAvatar(url);
   };
   const handleClipPhotosChange = async (files) => {
     const sel = Array.from(files).slice(0, 2);
-    setClipPhotoPreviews(sel.map(f => URL.createObjectURL(f)));
-    const fd = new FormData(); sel.forEach(f => fd.append("photos", f));
-    const { success, urls } = await (await fetch("/api/uploads/photo", { method: "POST", body: fd })).json();
+    setClipPhotoPreviews(sel.map((f) => URL.createObjectURL(f)));
+    const fd = new FormData();
+    sel.forEach((f) => fd.append("photos", f));
+    const { success, urls } = await (
+      await fetch("/api/uploads/photo", { method: "POST", body: fd })
+    ).json();
     if (success) setClipPhotos(urls);
   };
   const handleClipVideoChange = async (file) => {
     setClipVideoPreview(URL.createObjectURL(file));
-    const fd = new FormData(); fd.append("video", file);
-    const { success, url } = await (await fetch("/api/uploads/video", { method: "POST", body: fd })).json();
+    const fd = new FormData();
+    fd.append("video", file);
+    const { success, url } = await (
+      await fetch("/api/uploads/video", { method: "POST", body: fd })
+    ).json();
     if (success) setClipVideo(url);
   };
   const handleLogoChange = async (file) => {
     setLogoPreview(URL.createObjectURL(file));
-    const fd = new FormData(); fd.append("logo", file);
+    const fd = new FormData();
+    fd.append("logo", file);
     const res = await fetch("/api/uploads/logo", { method: "POST", body: fd });
     const data = await res.json();
-    if (!res.ok) { alert(data.message || "Logo upload failed"); return; }
+    if (!res.ok) {
+      alert(data.message || "Logo upload failed");
+      return;
+    }
     setLogo(data.logoUrl);
   };
   const handleDeleteAvatar = async () => {
     if (!avatar) return;
-    await fetch("/api/uploads/avatar", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ avatarUrl: avatar }) });
-    setAvatar(null); setAvatarPreview(null);
+    await fetch("/api/uploads/avatar", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ avatarUrl: avatar }),
+    });
+    setAvatar(null);
+    setAvatarPreview(null);
   };
   const handleDeletePhoto = async (i) => {
-    await fetch("/api/uploads/photo", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ photoUrls: [clipPhotos[i]] }) });
-    setClipPhotos(p => p.filter((_, idx) => idx !== i));
-    setClipPhotoPreviews(p => p.filter((_, idx) => idx !== i));
+    await fetch("/api/uploads/photo", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ photoUrls: [clipPhotos[i]] }),
+    });
+    setClipPhotos((p) => p.filter((_, idx) => idx !== i));
+    setClipPhotoPreviews((p) => p.filter((_, idx) => idx !== i));
   };
   const handleDeleteVideo = async () => {
     if (!clipVideo) return;
-    await fetch("/api/uploads/video", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ videoUrl: clipVideo }) });
-    setClipVideo(null); setClipVideoPreview(null);
+    await fetch("/api/uploads/video", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ videoUrl: clipVideo }),
+    });
+    setClipVideo(null);
+    setClipVideoPreview(null);
   };
   const removeLogo = async () => {
     if (!logo) return;
-    await fetch("/api/uploads/logo", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ logoUrl: logo }) });
-    setLogo(null); setLogoPreview(null);
+    await fetch("/api/uploads/logo", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ logoUrl: logo }),
+    });
+    setLogo(null);
+    setLogoPreview(null);
   };
 
   const hasPlayer = Boolean(context?.player?._id);
-  const hasTeam   = Boolean(context?.team?._id);
+  const hasTeam = Boolean(context?.team?._id);
 
   useEffect(() => {
     if (hasPlayer) {
@@ -305,8 +366,18 @@ export function UserProfile() {
 
   const handleSubmitPlayer = async (e) => {
     e.preventDefault();
-    if (!avatar) { alert("Avatar is required"); return; }
-    const payload = { avatar, inGameRole: role, isCaptain, isActive, clipPhotos, clipVideo };
+    if (!avatar) {
+      alert("Avatar is required");
+      return;
+    }
+    const payload = {
+      avatar,
+      inGameRole: role,
+      isCaptain,
+      isActive,
+      clipPhotos,
+      clipVideo,
+    };
     const res = await fetch(`/api/players/${context.user.id}`, {
       method: hasPlayer ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
@@ -314,7 +385,10 @@ export function UserProfile() {
       body: JSON.stringify(payload),
     });
     const data = await res.json();
-    if (!res.ok) { alert(data.message || "Operation failed"); return; }
+    if (!res.ok) {
+      alert(data.message || "Operation failed");
+      return;
+    }
     setOpen1(false);
     await context.fetchUser();
     await context.fetchActivePlayers();
@@ -334,12 +408,18 @@ export function UserProfile() {
 
   const handleAccept = async (requestId) => {
     const res = await fetch("/api/team-requests/accept", {
-      method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include",
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ requestId, playerId: context.player._id }),
     });
     const data = await res.json();
-    if (!data.success) { alert(data.message || "Failed"); return; }
-    setOpen3(false); setOpen4(false);
+    if (!data.success) {
+      alert(data.message || "Failed");
+      return;
+    }
+    setOpen3(false);
+    setOpen4(false);
     context.fetchTeam(context.player._id);
     context.fetchPlayer(context.user.id);
     context.fetchPlayerRequests?.();
@@ -347,11 +427,15 @@ export function UserProfile() {
 
   const handleReject = async (requestId) => {
     const res = await fetch("/api/team-requests/reject", {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ requestId, playerId: context.player._id }),
     });
     const data = await res.json();
-    if (data.success) { setOpen3(false); setOpen4(false); }
+    if (data.success) {
+      setOpen3(false);
+      setOpen4(false);
+    }
   };
 
   const handleLeave = async () => {
@@ -359,21 +443,32 @@ export function UserProfile() {
     setLeaving(true);
     try {
       const res = await fetch("/api/team-requests/leave", {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teamId: context.team._id, playerId: context.player._id }),
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId: context.team._id,
+          playerId: context.player._id,
+        }),
       });
       const data = await res.json();
       if (!data.success) return;
       await context.fetchPlayer(context.user.id);
       await context.fetchTeam(context.player._id);
       await context.fetchActiveTeams();
-    } finally { setLeaving(false); }
+    } finally {
+      setLeaving(false);
+    }
   };
 
   const handleKick = async (targetPlayerId) => {
     const res = await fetch("/api/team-requests/kick", {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ teamId: context.team._id, captainId: context.player._id, targetPlayerId }),
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        teamId: context.team._id,
+        captainId: context.player._id,
+        targetPlayerId,
+      }),
     });
     const data = await res.json();
     if (!data.success) return;
@@ -384,8 +479,12 @@ export function UserProfile() {
 
   const handleDisband = async () => {
     const res = await fetch("/api/team-requests/disband", {
-      method: "DELETE", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ teamId: context.team._id, captainId: context.player._id }),
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        teamId: context.team._id,
+        captainId: context.player._id,
+      }),
     });
     const data = await res.json();
     if (!data.success) return;
@@ -401,7 +500,8 @@ export function UserProfile() {
   /* ── shared dark form field styles ── */
   const inputCls =
     "w-full bg-[#0f1318] border border-[#2a2e3a] text-[#d0d5df] rounded-md px-3 py-2 text-sm placeholder-[#4a5060] focus:border-[#ff6b00]/50 focus:outline-none transition font-['Rajdhani']";
-  const labelCls = "text-[11px] text-[#4a5060] uppercase tracking-widest mb-1 block";
+  const labelCls =
+    "text-[11px] text-[#4a5060] uppercase tracking-widest mb-1 block";
 
   return (
     <>
@@ -412,20 +512,26 @@ export function UserProfile() {
         <div
           className="relative flex justify-between items-start gap-6 px-6 pt-6 pb-5 border-b border-[#1e2330]"
           style={{
-            background: "linear-gradient(135deg, #0f1318 0%, #1a1f2e 50%, #0f1318 100%)",
+            background:
+              "linear-gradient(135deg, #0f1318 0%, #1a1f2e 50%, #0f1318 100%)",
           }}
         >
           {/* radial glow top-right */}
           <div
             className="pointer-events-none absolute -top-8 -right-8 w-40 h-40 rounded-full"
-            style={{ background: "radial-gradient(circle, rgba(255,107,0,0.10) 0%, transparent 70%)" }}
+            style={{
+              background:
+                "radial-gradient(circle, rgba(255,107,0,0.10) 0%, transparent 70%)",
+            }}
           />
 
           {/* Avatar + Name */}
           <div className="flex gap-5 items-start">
-            <div className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-[#ff6b00]/40 shadow-[0_0_16px_rgba(255,107,0,0.25)] flex-shrink-0">
+            <div className="relative w-50 h-50 rounded-xl overflow-hidden border-2 border-[#ff6b00]/40 shadow-[0_0_16px_rgba(255,107,0,0.25)] flex-shrink-0">
               <img
-                src={context?.player?.avatar || context?.user?.username?.charAt(0)}
+                src={
+                  context?.player?.avatar || context?.user?.username?.charAt(0)
+                }
                 className="w-full h-full object-cover rounded-xl"
                 alt=""
               />
@@ -434,33 +540,45 @@ export function UserProfile() {
             <div>
               {/* username row */}
               <div className="flex items-center gap-3 mb-1">
-                <h2 className="font-['Orbitron'] text-xl font-black text-[#f0f2f5] tracking-wide [text-shadow:0_0_20px_rgba(255,107,0,0.3)]">
+                <h2 className="font-['Orbitron'] text-4xl font-black text-[#f0f2f5] tracking-wide [text-shadow:0_0_20px_rgba(255,107,0,0.3)]">
                   {context?.user?.username}
                 </h2>
-                {context?.user?.provider === "google"
-                  ? <img src="/google.svg" alt="Google" className="w-5 h-5" />
-                  : <img src="/gmail.svg" alt="Email" className="w-5 h-5" />}
+                {context?.user?.provider === "google" ? (
+                  <img src="/google.svg" alt="Google" className="w-7 h-7" />
+                ) : (
+                  <img src="/gmail.svg" alt="Email" className="w-7 h-7" />
+                )}
               </div>
 
               {/* UID */}
-              <p className="text-[13px] text-[#5a6070] mb-2 font-['Rajdhani']">
+              <p className="text-[20px] text-[#5a6070] mb-2 font-['Rajdhani']">
                 Free Fire UID:{" "}
-                <span className="text-[#ff8c30] font-bold">{context?.user?.ffUid}</span>
+                <span className="text-[#ff8c30] font-bold">
+                  {context?.user?.ffUid}
+                </span>
               </p>
 
               {/* Bio */}
               {context?.user?.bio && (
-                <p className="text-[13px] text-[#5a6070] italic max-w-lg">
+                <p className="text-[14px] text-[#5a6070] italic max-w-lg">
                   "{context.user.bio}"
                 </p>
               )}
 
               {/* badges */}
               <div className="flex flex-wrap gap-2 mt-3">
-                {context?.user?.rank && <Chip variant="orange">{context.user.rank}</Chip>}
-                {context?.user?.playstyle && <Chip variant="blue">{context.user.playstyle}</Chip>}
-                {context?.user?.plan && <Chip variant="yellow">{context.user.plan}</Chip>}
-                {context?.player?.isCaptain && <Chip variant="green">Captain</Chip>}
+                {context?.user?.rank && (
+                  <Chip variant="orange">{context.user.rank}</Chip>
+                )}
+                {context?.user?.playstyle && (
+                  <Chip variant="blue">{context.user.playstyle}</Chip>
+                )}
+                {context?.user?.plan && (
+                  <Chip variant="yellow">{context.user.plan}</Chip>
+                )}
+                {context?.player?.isCaptain && (
+                  <Chip variant="green">Captain</Chip>
+                )}
                 {context?.player?.isActive && (
                   <Chip variant="green">
                     <span className="inline-block w-1.5 h-1.5 bg-[#4ade80] rounded-full mr-1 align-middle animate-pulse" />
@@ -472,21 +590,32 @@ export function UserProfile() {
           </div>
 
           {/* Right-side action buttons */}
-          <div className="flex flex-col gap-2.5 flex-shrink-0">
+          <div className="grid grid-cols-2 gap-2.5 flex-shrink-0">
             {/* Edit Profile */}
             <DarkDialog
-              open={open} onOpenChange={setOpen}
+              open={open}
+              onOpenChange={setOpen}
               trigger={<GhostBtn>✏ Edit Profile</GhostBtn>}
               title="Edit Profile"
             >
-              <EditProfileForm user={context?.user} onClose={() => setOpen(false)} />
+              <EditProfileForm
+                user={context?.user}
+                onClose={() => setOpen(false)}
+              />
             </DarkDialog>
 
             {/* Register / Edit Player */}
             <DarkDialog
-              open={open1} onOpenChange={setOpen1}
-              trigger={<GhostBtn>{hasPlayer ? "⚙ Edit Player" : "⚔ Register Player"}</GhostBtn>}
-              title={hasPlayer ? "Edit Player Details" : "Register Player Profile"}
+              open={open1}
+              onOpenChange={setOpen1}
+              trigger={
+                <GhostBtn>
+                  {hasPlayer ? "⚙ Edit Player" : "⚔ Register Player"}
+                </GhostBtn>
+              }
+              title={
+                hasPlayer ? "Edit Player Details" : "Register Player Profile"
+              }
             >
               <form onSubmit={handleSubmitPlayer} className="space-y-5">
                 {/* Avatar */}
@@ -494,10 +623,18 @@ export function UserProfile() {
                   <span className={labelCls}>Avatar</span>
                   <div className="flex items-center gap-4">
                     <UploadZone
-                      preview={avatarPreview} accept="image/*" label="Upload avatar"
-                      circle onFile={handleAvatarChange} onRemove={handleDeleteAvatar}
+                      preview={avatarPreview}
+                      accept="image/*"
+                      label="Upload avatar"
+                      circle
+                      onFile={handleAvatarChange}
+                      onRemove={handleDeleteAvatar}
                     />
-                    <p className="text-[11px] text-[#4a5060]">Square image<br/>JPG / PNG</p>
+                    <p className="text-[11px] text-[#4a5060]">
+                      Square image
+                      <br />
+                      JPG / PNG
+                    </p>
                   </div>
                 </div>
 
@@ -510,46 +647,75 @@ export function UserProfile() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-[#0f1318] border border-[#2a2e3a] text-[#d0d5df] font-['Rajdhani']">
-                        {["Rusher","Support","Sniper","Nader"].map(r => (
-                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                        {["Rusher", "Support", "Sniper", "Nader"].map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {r}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <Checkbox
-                      checked={isCaptain} onCheckedChange={v => setIsCaptain(Boolean(v))}
+                      checked={isCaptain}
+                      onCheckedChange={(v) => setIsCaptain(Boolean(v))}
                       className="border-[#2a2e3a] data-[state=checked]:bg-[#ff6b00] data-[state=checked]:border-[#ff6b00]"
                     />
-                    <span className="text-[13px] text-[#8090a0] uppercase tracking-wider">Captain</span>
+                    <span className="text-[13px] text-[#8090a0] uppercase tracking-wider">
+                      Captain
+                    </span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <Checkbox
-                      checked={isActive} onCheckedChange={v => setIsActive(Boolean(v))}
+                      checked={isActive}
+                      onCheckedChange={(v) => setIsActive(Boolean(v))}
                       className="border-[#2a2e3a] data-[state=checked]:bg-[#4ade80] data-[state=checked]:border-[#4ade80]"
                     />
-                    <span className="text-[13px] text-[#8090a0] uppercase tracking-wider">Active</span>
+                    <span className="text-[13px] text-[#8090a0] uppercase tracking-wider">
+                      Active
+                    </span>
                   </label>
                 </div>
 
                 {/* Photo Clips */}
                 <div>
-                  <span className={labelCls}>Photo Clips <span className="normal-case">(max 2)</span></span>
+                  <span className={labelCls}>
+                    Photo Clips <span className="normal-case">(max 2)</span>
+                  </span>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="relative flex flex-col items-center justify-center border-2 border-dashed border-[#2a2e3a] rounded-lg p-5 cursor-pointer hover:border-[#ff6b00]/50 transition bg-[#0f1318]">
                       <CloudUpload className="w-7 h-7 text-[#4a5060] mb-1" />
-                      <p className="text-[10px] text-[#4a5060] text-center">Upload images</p>
-                      <input type="file" accept="image/*" multiple disabled={clipPhotos.length >= 2}
-                        onChange={e => e.target.files && handleClipPhotosChange(e.target.files)}
-                        className="absolute inset-0 opacity-0 cursor-pointer" />
+                      <p className="text-[10px] text-[#4a5060] text-center">
+                        Upload images
+                      </p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        disabled={clipPhotos.length >= 2}
+                        onChange={(e) =>
+                          e.target.files &&
+                          handleClipPhotosChange(e.target.files)
+                        }
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
                     </div>
                     {clipPhotoPreviews.length > 0 && (
                       <div className="flex gap-2">
                         {clipPhotoPreviews.map((img, i) => (
-                          <div key={i} className="relative rounded-lg overflow-hidden h-[100px] flex-1">
-                            <img src={img} className="w-full h-full object-cover" />
-                            <button type="button" onClick={() => handleDeletePhoto(i)}
-                              className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-0.5 hover:bg-red-500 transition">
+                          <div
+                            key={i}
+                            className="relative rounded-lg overflow-hidden h-[100px] flex-1"
+                          >
+                            <img
+                              src={img}
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePhoto(i)}
+                              className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-0.5 hover:bg-red-500 transition"
+                            >
                               <X className="w-3 h-3" />
                             </button>
                           </div>
@@ -565,19 +731,34 @@ export function UserProfile() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="relative flex flex-col items-center justify-center border-2 border-dashed border-[#2a2e3a] rounded-lg p-5 cursor-pointer hover:border-[#ff6b00]/50 transition bg-[#0f1318]">
                       <CloudUpload className="w-7 h-7 text-[#4a5060] mb-1" />
-                      <p className="text-[10px] text-[#4a5060] text-center">Upload video</p>
-                      <input type="file" accept="video/*" disabled={!!clipVideo}
-                        onChange={e => e.target.files && handleClipVideoChange(e.target.files[0])}
-                        className="absolute inset-0 opacity-0 cursor-pointer" />
+                      <p className="text-[10px] text-[#4a5060] text-center">
+                        Upload video
+                      </p>
+                      <input
+                        type="file"
+                        accept="video/*"
+                        disabled={!!clipVideo}
+                        onChange={(e) =>
+                          e.target.files &&
+                          handleClipVideoChange(e.target.files[0])
+                        }
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
                     </div>
                     {clipVideoPreview && (
                       <div className="relative rounded-lg overflow-hidden h-[100px]">
-                        <video src={clipVideoPreview} className="w-full h-full object-cover" />
+                        <video
+                          src={clipVideoPreview}
+                          className="w-full h-full object-cover"
+                        />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                           <Play className="w-7 h-7 text-white" />
                         </div>
-                        <button type="button" onClick={handleDeleteVideo}
-                          className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-0.5 hover:bg-red-500 transition">
+                        <button
+                          type="button"
+                          onClick={handleDeleteVideo}
+                          className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-0.5 hover:bg-red-500 transition"
+                        >
                           <X className="w-3 h-3" />
                         </button>
                       </div>
@@ -593,13 +774,23 @@ export function UserProfile() {
 
             {/* View Clips */}
             <DarkDialog
-              open={detailOpen} onOpenChange={setDetailOpen}
+              open={detailOpen}
+              onOpenChange={setDetailOpen}
               trigger={
-                <GhostBtn onClick={() => { setSelectedPlayer(context?.player); setDetailOpen(true); }}>
+                <GhostBtn
+                  onClick={() => {
+                    setSelectedPlayer(context?.player);
+                    setDetailOpen(true);
+                  }}
+                >
                   ▶ View Clips
                 </GhostBtn>
               }
-              title={selectedPlayer ? `${selectedPlayer.userId?.username} — Clips` : "Clips"}
+              title={
+                selectedPlayer
+                  ? `${selectedPlayer.userId?.username} — Clips`
+                  : "Clips"
+              }
             >
               {selectedPlayer && (
                 <div className="space-y-4">
@@ -608,7 +799,11 @@ export function UserProfile() {
                       <span className={labelCls}>Photo Clips</span>
                       <div className="grid grid-cols-2 gap-2">
                         {selectedPlayer.clipPhotos.map((p, i) => (
-                          <img key={i} src={p} className="h-40 w-full rounded-lg object-cover border border-[#2a2e3a]" />
+                          <img
+                            key={i}
+                            src={p}
+                            className="h-40 w-full rounded-lg object-cover border border-[#2a2e3a]"
+                          />
                         ))}
                       </div>
                     </div>
@@ -616,7 +811,11 @@ export function UserProfile() {
                   {selectedPlayer.clipVideo && (
                     <div>
                       <span className={labelCls}>Video Clip</span>
-                      <video src={selectedPlayer.clipVideo} controls className="w-full h-[28vh] rounded-lg border border-[#2a2e3a]" />
+                      <video
+                        src={selectedPlayer.clipVideo}
+                        controls
+                        className="w-full h-[28vh] rounded-lg border border-[#2a2e3a]"
+                      />
                     </div>
                   )}
                 </div>
@@ -626,28 +825,54 @@ export function UserProfile() {
             {/* Create / Edit Team */}
             {(!hasTeam || hasCaptain) && (
               <DarkDialog
-                open={openTeam} onOpenChange={setOpenTeam}
-                trigger={<GhostBtn>{hasTeam ? "🛡 Edit Team" : "🛡 Create Team"}</GhostBtn>}
+                open={openTeam}
+                onOpenChange={setOpenTeam}
+                trigger={
+                  <GhostBtn>
+                    {hasTeam ? "🛡 Edit Team" : "🛡 Create Team"}
+                  </GhostBtn>
+                }
                 title={hasTeam ? "Edit Team Details" : "Create Team"}
               >
                 <form onSubmit={handleSubmitTeam} className="space-y-4">
                   <div>
                     <span className={labelCls}>Team Logo</span>
                     <div className="flex items-center gap-4">
-                      <UploadZone preview={logoPreview} accept="image/*" label="Upload Logo"
-                        circle onFile={handleLogoChange} onRemove={removeLogo} />
-                      <p className="text-[11px] text-[#4a5060]">PNG / JPG<br/>Square recommended</p>
+                      <UploadZone
+                        preview={logoPreview}
+                        accept="image/*"
+                        label="Upload Logo"
+                        circle
+                        onFile={handleLogoChange}
+                        onRemove={removeLogo}
+                      />
+                      <p className="text-[11px] text-[#4a5060]">
+                        PNG / JPG
+                        <br />
+                        Square recommended
+                      </p>
                     </div>
                   </div>
                   <div>
                     <label className={labelCls}>Team Name</label>
-                    <Input value={teamName} onChange={e => setTeamName(e.target.value)}
-                      placeholder="Enter team name" required className={inputCls} />
+                    <Input
+                      value={teamName}
+                      onChange={(e) => setTeamName(e.target.value)}
+                      placeholder="Enter team name"
+                      required
+                      className={inputCls}
+                    />
                   </div>
                   <div>
                     <label className={labelCls}>Team Tag</label>
-                    <Input value={tag} onChange={e => setTag(e.target.value.toUpperCase())}
-                      maxLength={5} placeholder="TSM" required className={inputCls} />
+                    <Input
+                      value={tag}
+                      onChange={(e) => setTag(e.target.value.toUpperCase())}
+                      maxLength={5}
+                      placeholder="TSM"
+                      required
+                      className={inputCls}
+                    />
                   </div>
                   <div>
                     <label className={labelCls}>Status</label>
@@ -656,7 +881,11 @@ export function UserProfile() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-[#0f1318] border border-[#2a2e3a] text-[#d0d5df] font-['Rajdhani']">
-                        {["active","inactive","disbanded"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        {["active", "inactive", "disbanded"].map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -667,7 +896,11 @@ export function UserProfile() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-[#0f1318] border border-[#2a2e3a] text-[#d0d5df] font-['Rajdhani']">
-                        {["Amateur","Semi-Pro","Pro"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        {["Amateur", "Semi-Pro", "Pro"].map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {t}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -681,7 +914,8 @@ export function UserProfile() {
             {/* Team Details */}
             {context?.team && (
               <DarkDialog
-                open={teamDetailOpen} onOpenChange={setTeamDetailOpen}
+                open={teamDetailOpen}
+                onOpenChange={setTeamDetailOpen}
                 trigger={<GhostBtn>🛡 Team Details</GhostBtn>}
                 title={`${context.team.teamName} — Team Info`}
               >
@@ -690,19 +924,31 @@ export function UserProfile() {
                     {/* Team logo + info */}
                     <div className="flex gap-5 items-center">
                       {context.team.logo ? (
-                        <img src={context.team.logo} alt={context.team.teamName}
-                          className="w-20 h-20 rounded-xl object-cover border-2 border-[#ff6b00]/40 shadow-[0_0_16px_rgba(255,107,0,0.2)]" />
+                        <img
+                          src={context.team.logo}
+                          alt={context.team.teamName}
+                          className="w-20 h-20 rounded-xl object-cover border-2 border-[#ff6b00]/40 shadow-[0_0_16px_rgba(255,107,0,0.2)]"
+                        />
                       ) : (
                         <div className="w-20 h-20 rounded-xl bg-[#1a1f2e] border border-[#2a2e3a] flex items-center justify-center font-['Orbitron'] text-2xl text-[#ff8c30]">
                           {context.team.teamName?.charAt(0)}
                         </div>
                       )}
                       <div className="grid grid-cols-2 gap-x-8 gap-y-2">
-                        <StatCell label="Team Name" value={context.team.teamName} accent />
+                        <StatCell
+                          label="Team Name"
+                          value={context.team.teamName}
+                          accent
+                        />
                         <StatCell label="Tag" value={context.team.tag} />
                         <StatCell label="Region" value={context.team.region} />
                         <StatCell label="Tier" value={context.team.tier} />
-                        <StatCell label="Captain" value={context.team.teamCaptain?.userId?.username || "N/A"} />
+                        <StatCell
+                          label="Captain"
+                          value={
+                            context.team.teamCaptain?.userId?.username || "N/A"
+                          }
+                        />
                         <StatCell label="Status" value={context.team.status} />
                       </div>
                     </div>
@@ -710,49 +956,79 @@ export function UserProfile() {
                     {/* Members */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className={labelCls}>Team Members ({context.team.players?.length ?? 0})</span>
+                        <span className={labelCls}>
+                          Team Members ({context.team.players?.length ?? 0})
+                        </span>
                         {hasCaptain && (
-                          <button onClick={() => setOpen4(true)}
-                            className="text-[11px] text-[#ff8c30] uppercase tracking-wider hover:text-[#ffb300] transition">
+                          <button
+                            onClick={() => setOpen4(true)}
+                            className="text-[11px] text-[#ff8c30] uppercase tracking-wider hover:text-[#ffb300] transition"
+                          >
                             + Requests
                           </button>
                         )}
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        {context.team.players?.length > 0 ? context.team.players.map(m => (
-                          <div key={m._id} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-[#0f1318] border border-[#1e2330]">
-                            <div className="flex items-center gap-2">
-                              <img src={m.avatar || "/default-avatar.png"} alt=""
-                                className="w-9 h-9 rounded-lg object-cover border border-[#2a2e3a]" />
-                              <div>
-                                <p className="text-[13px] font-bold text-[#d0d5df]">{m.userId.username}</p>
-                                <p className="text-[10px] text-[#4a5060]">UID: {m.userId.ffUid}</p>
+                        {context.team.players?.length > 0 ? (
+                          context.team.players.map((m) => (
+                            <div
+                              key={m._id}
+                              className="flex items-center justify-between gap-2 p-2 rounded-lg bg-[#0f1318] border border-[#1e2330]"
+                            >
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={m.avatar || "/default-avatar.png"}
+                                  alt=""
+                                  className="w-9 h-9 rounded-lg object-cover border border-[#2a2e3a]"
+                                />
+                                <div>
+                                  <p className="text-[13px] font-bold text-[#d0d5df]">
+                                    {m.userId.username}
+                                  </p>
+                                  <p className="text-[10px] text-[#4a5060]">
+                                    UID: {m.userId.ffUid}
+                                  </p>
+                                </div>
                               </div>
+                              {hasCaptain && m._id !== context?.player?._id && (
+                                <button
+                                  onClick={() => handleKick(m._id)}
+                                  className="text-[#4a5060] hover:text-red-500 transition"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
-                            {hasCaptain && m._id !== context?.player?._id && (
-                              <button onClick={() => handleKick(m._id)}
-                                className="text-[#4a5060] hover:text-red-500 transition">
-                                <X className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
-                        )) : (
-                          <p className="text-[13px] text-[#4a5060]">No members yet</p>
+                          ))
+                        ) : (
+                          <p className="text-[13px] text-[#4a5060]">
+                            No members yet
+                          </p>
                         )}
                       </div>
                     </div>
 
-                    {hasCaptain
-                      ? <GhostBtn onClick={handleDisband} className="w-full text-red-400 hover:text-red-400 hover:border-red-500/40">
-                          💀 Disband Team
-                        </GhostBtn>
-                      : <GhostBtn onClick={handleLeave} disabled={leaving} className="w-full">
-                          {leaving ? "Leaving..." : "🚪 Leave Team"}
-                        </GhostBtn>
-                    }
+                    {hasCaptain ? (
+                      <GhostBtn
+                        onClick={handleDisband}
+                        className="w-full text-red-400 hover:text-red-400 hover:border-red-500/40"
+                      >
+                        💀 Disband Team
+                      </GhostBtn>
+                    ) : (
+                      <GhostBtn
+                        onClick={handleLeave}
+                        disabled={leaving}
+                        className="w-full"
+                      >
+                        {leaving ? "Leaving..." : "🚪 Leave Team"}
+                      </GhostBtn>
+                    )}
                   </div>
                 ) : (
-                  <p className="text-center text-[#4a5060]">No team details available.</p>
+                  <p className="text-center text-[#4a5060]">
+                    No team details available.
+                  </p>
                 )}
               </DarkDialog>
             )}
@@ -760,42 +1036,74 @@ export function UserProfile() {
             {/* Applications */}
             {context?.playerRequests && (
               <DarkDialog
-                open={open3} onOpenChange={setOpen3}
+                open={open3}
+                onOpenChange={setOpen3}
                 trigger={<GhostBtn>📋 Applications</GhostBtn>}
                 title="Team Requests"
               >
                 {context.playerRequests.length === 0 ? (
-                  <p className="text-center text-[#4a5060] py-4">No team requests</p>
+                  <p className="text-center text-[#4a5060] py-4">
+                    No team requests
+                  </p>
                 ) : (
                   <div className="space-y-2">
-                    {context.playerRequests.map(req => {
-                      const isInvite   = req.type === "invite";
-                      const isPending  = req.status === "pending";
+                    {context.playerRequests.map((req) => {
+                      const isInvite = req.type === "invite";
+                      const isPending = req.status === "pending";
                       const isAccepted = req.status === "accepted";
                       const isRejected = req.status === "rejected";
                       return (
-                        <div key={req._id} className="flex items-center justify-between p-3 rounded-lg bg-[#0f1318] border border-[#1e2330]">
+                        <div
+                          key={req._id}
+                          className="flex items-center justify-between p-3 rounded-lg bg-[#0f1318] border border-[#1e2330]"
+                        >
                           <div className="flex items-center gap-3">
-                            <img src={req.team?.logo || "/team-placeholder.png"} alt=""
-                              className="w-11 h-11 rounded-lg object-cover border border-[#2a2e3a]" />
+                            <img
+                              src={req.team?.logo || "/team-placeholder.png"}
+                              alt=""
+                              className="w-11 h-11 rounded-lg object-cover border border-[#2a2e3a]"
+                            />
                             <div>
-                              <p className="text-[13px] font-bold text-[#d0d5df]">{req.team?.teamName}</p>
+                              <p className="text-[13px] font-bold text-[#d0d5df]">
+                                {req.team?.teamName}
+                              </p>
                               <p className="text-[11px] text-[#4a5060]">
                                 {req.team?.tag}
-                                {isInvite && <span> • {isPending ? "Invited you" : req.status}</span>}
+                                {isInvite && (
+                                  <span>
+                                    {" "}
+                                    • {isPending ? "Invited you" : req.status}
+                                  </span>
+                                )}
                               </p>
                             </div>
                           </div>
                           <div>
                             {isInvite && isPending && (
                               <div className="flex gap-2">
-                                <PrimaryBtn onClick={() => handleAccept(req._id)} className="py-1.5 px-3 text-[11px]">Accept</PrimaryBtn>
-                                <GhostBtn onClick={() => handleReject(req._id)} className="py-1.5 px-3 text-[11px] text-red-400 hover:text-red-400 hover:border-red-500/40">Reject</GhostBtn>
+                                <PrimaryBtn
+                                  onClick={() => handleAccept(req._id)}
+                                  className="py-1.5 px-3 text-[11px]"
+                                >
+                                  Accept
+                                </PrimaryBtn>
+                                <GhostBtn
+                                  onClick={() => handleReject(req._id)}
+                                  className="py-1.5 px-3 text-[11px] text-red-400 hover:text-red-400 hover:border-red-500/40"
+                                >
+                                  Reject
+                                </GhostBtn>
                               </div>
                             )}
-                            {!isInvite && isPending && <Chip variant="yellow">⏳ Pending</Chip>}
-                            {isAccepted && <Chip variant="green">✅ Accepted</Chip>}
-                            {isRejected && <Chip variant="red">❌ Rejected</Chip>}
+                            {!isInvite && isPending && (
+                              <Chip variant="yellow">⏳ Pending</Chip>
+                            )}
+                            {isAccepted && (
+                              <Chip variant="green">✅ Accepted</Chip>
+                            )}
+                            {isRejected && (
+                              <Chip variant="red">❌ Rejected</Chip>
+                            )}
                           </div>
                         </div>
                       );
@@ -811,7 +1119,10 @@ export function UserProfile() {
                 <DialogContent className="max-w-lg bg-[#0a0c10] border border-[#2a2e3a] text-[#d0d5df] font-['Rajdhani'] p-0 overflow-hidden">
                   <div
                     className="absolute top-0 left-0 right-0 h-[2px]"
-                    style={{ background: "linear-gradient(90deg, transparent, #ff6b00 30%, #ffb300 50%, #ff6b00 70%, transparent)" }}
+                    style={{
+                      background:
+                        "linear-gradient(90deg, transparent, #ff6b00 30%, #ffb300 50%, #ff6b00 70%, transparent)",
+                    }}
                   />
                   <div className="px-6 py-5">
                     <DialogHeader>
@@ -821,32 +1132,61 @@ export function UserProfile() {
                     </DialogHeader>
                     <div className="mt-4">
                       {context.teamRequests.length === 0 ? (
-                        <p className="text-center text-[#4a5060] py-4">No join requests</p>
+                        <p className="text-center text-[#4a5060] py-4">
+                          No join requests
+                        </p>
                       ) : (
                         <div className="space-y-2">
-                          {context.teamRequests.map(req => {
-                            const isPending  = req.status === "pending";
+                          {context.teamRequests.map((req) => {
+                            const isPending = req.status === "pending";
                             const isAccepted = req.status === "accepted";
                             const isRejected = req.status === "rejected";
                             return (
-                              <div key={req._id} className="flex items-center justify-between p-3 rounded-lg bg-[#0f1318] border border-[#1e2330]">
+                              <div
+                                key={req._id}
+                                className="flex items-center justify-between p-3 rounded-lg bg-[#0f1318] border border-[#1e2330]"
+                              >
                                 <div className="flex items-center gap-3">
-                                  <img src={req.player?.avatar || "/default-avatar.png"} alt=""
-                                    className="w-11 h-11 rounded-lg object-cover border border-[#2a2e3a]" />
+                                  <img
+                                    src={
+                                      req.player?.avatar ||
+                                      "/default-avatar.png"
+                                    }
+                                    alt=""
+                                    className="w-11 h-11 rounded-lg object-cover border border-[#2a2e3a]"
+                                  />
                                   <div>
-                                    <p className="text-[13px] font-bold text-[#d0d5df]">{req.player?.userId?.username}</p>
-                                    <p className="text-[11px] text-[#4a5060]">{req.player?.inGameRole} • Wants to join</p>
+                                    <p className="text-[13px] font-bold text-[#d0d5df]">
+                                      {req.player?.userId?.username}
+                                    </p>
+                                    <p className="text-[11px] text-[#4a5060]">
+                                      {req.player?.inGameRole} • Wants to join
+                                    </p>
                                   </div>
                                 </div>
                                 <div>
                                   {isPending && (
                                     <div className="flex gap-2">
-                                      <PrimaryBtn onClick={() => handleAccept(req._id)} className="py-1.5 px-3 text-[11px]">Accept</PrimaryBtn>
-                                      <GhostBtn onClick={() => handleReject(req._id)} className="py-1.5 px-3 text-[11px] text-red-400 hover:text-red-400 hover:border-red-500/40">Reject</GhostBtn>
+                                      <PrimaryBtn
+                                        onClick={() => handleAccept(req._id)}
+                                        className="py-1.5 px-3 text-[11px]"
+                                      >
+                                        Accept
+                                      </PrimaryBtn>
+                                      <GhostBtn
+                                        onClick={() => handleReject(req._id)}
+                                        className="py-1.5 px-3 text-[11px] text-red-400 hover:text-red-400 hover:border-red-500/40"
+                                      >
+                                        Reject
+                                      </GhostBtn>
                                     </div>
                                   )}
-                                  {!isPending && isAccepted && <Chip variant="green">✅ Accepted</Chip>}
-                                  {!isPending && isRejected && <Chip variant="red">❌ Rejected</Chip>}
+                                  {!isPending && isAccepted && (
+                                    <Chip variant="green">✅ Accepted</Chip>
+                                  )}
+                                  {!isPending && isRejected && (
+                                    <Chip variant="red">❌ Rejected</Chip>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -865,11 +1205,14 @@ export function UserProfile() {
         {/* Row 1: user stats */}
         <div className="grid grid-cols-5 border-b border-[#1e2330] bg-[#0c0e14]">
           {[
-            { label: "Rank",          value: context?.user?.rank },
-            { label: "Playstyle",     value: context?.user?.playstyle },
-            { label: "Tournaments",   value: context?.user?.tournamentsJoined },
-            { label: "Plan",          value: context?.user?.plan?.toUpperCase() },
-            { label: "User Type",     value: context?.user?.role === "user" ? "Player" : "Moderator" },
+            { label: "Rank", value: context?.user?.rank },
+            { label: "Playstyle", value: context?.user?.playstyle },
+            { label: "Tournaments", value: context?.user?.tournamentsJoined },
+            { label: "Plan", value: context?.user?.plan?.toUpperCase() },
+            {
+              label: "User Type",
+              value: context?.user?.role === "user" ? "Player" : "Moderator",
+            },
           ].map((s, i) => (
             <div
               key={i}
@@ -883,17 +1226,27 @@ export function UserProfile() {
         {/* Row 2: team / player info */}
         <div className="grid grid-cols-5 border-b border-[#1e2330] bg-[#0a0c10]">
           {[
-            { label: "Team",          value: context?.team?.teamName || "No Team" },
-            { label: "Role",          value: context?.player?.inGameRole || "N/A" },
-            { label: "Likes",         value: context?.player?.likes || "0" },
-            { label: "Captain / IGL", value: context?.player?.isCaptain ? "Yes" : "No" },
-            { label: "Status",        value: context?.player?.isActive ? "Active" : "Inactive" },
+            { label: "Team", value: context?.team?.teamName || "No Team" },
+            { label: "Role", value: context?.player?.inGameRole || "N/A" },
+            { label: "Likes", value: context?.player?.likes || "0" },
+            {
+              label: "Captain / IGL",
+              value: context?.player?.isCaptain ? "Yes" : "No",
+            },
+            {
+              label: "Status",
+              value: context?.player?.isActive ? "Active" : "Inactive",
+            },
           ].map((s, i) => (
             <div
               key={i}
               className={`relative px-5 py-3.5 ${i < 4 ? "after:content-[''] after:absolute after:right-0 after:top-[20%] after:bottom-[20%] after:w-px after:bg-[#1e2330]" : ""}`}
             >
-              <StatCell label={s.label} value={s.value} accent={i === 4 && context?.player?.isActive} />
+              <StatCell
+                label={s.label}
+                value={s.value}
+                accent={i === 4 && context?.player?.isActive}
+              />
             </div>
           ))}
         </div>
@@ -901,11 +1254,19 @@ export function UserProfile() {
         {/* Row 3: combat stats */}
         <div className="grid grid-cols-5 bg-[#0c0e14]">
           {[
-            { label: "Matches",   value: context?.player?.stats?.matchesPlayed || "0" },
-            { label: "Win Rate",  value: context?.player?.stats?.winRate ? `${context.player.stats.winRate}%` : "0%" },
-            { label: "Kills",     value: context?.player?.stats?.kills || "0" },
-            { label: "Assists",   value: context?.player?.stats?.assists || "0" },
-            { label: "Deaths",    value: context?.player?.stats?.deaths || "0" },
+            {
+              label: "Matches",
+              value: context?.player?.stats?.matchesPlayed || "0",
+            },
+            {
+              label: "Win Rate",
+              value: context?.player?.stats?.winRate
+                ? `${context.player.stats.winRate}%`
+                : "0%",
+            },
+            { label: "Kills", value: context?.player?.stats?.kills || "0" },
+            { label: "Assists", value: context?.player?.stats?.assists || "0" },
+            { label: "Deaths", value: context?.player?.stats?.deaths || "0" },
           ].map((s, i) => (
             <div
               key={i}
