@@ -72,3 +72,18 @@ export async function checkApiLimit(ip) {
     throw new Error("Too many requests. Slow down.")
   }
 }
+
+const guestLimiter = new RateLimiterMemory({
+  points: 5,
+  duration: 60 * 60, // 5 guest accounts per hour
+})
+
+export async function checkGuestLimit(ip) {
+  try {
+    await guestLimiter.consume(ip)
+  } catch {
+    throw new Error(
+      "Too many guest accounts created. Try again later."
+    )
+  }
+}

@@ -36,7 +36,7 @@ export function DashboardLayout({ user }) {
   };
    useEffect(() => {
     window.scrollTo({
-      top: 500,
+      top: 450,
       behavior: "smooth", 
     });
   }, [activeTab]);

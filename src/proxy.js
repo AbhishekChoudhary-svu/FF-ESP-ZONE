@@ -18,7 +18,7 @@ export async function proxy(req) {
   const session = verifySession(raw);
   console.log("2. verified session:", session);
 
-  if (!session?.uid || !session?.email) {
+  if (!session?.uid ) {
     console.log("3. REDIRECTING — bad session");
     return NextResponse.redirect(new URL("/login", req.url));
   }
@@ -26,26 +26,11 @@ export async function proxy(req) {
   try {
     await dbConnect();
     const user = await User.findOne({ uid: session.uid }).lean();
-    console.log(
-      "4. user from DB:",
-      user
-        ? {
-            role: user.role,
-            sessionVersion: user.sessionVersion,
-            banned: user.isBanned,
-            verified: user.emailVerified,
-          }
-        : "NOT FOUND",
-    );
+    
 
     if (!user) return NextResponse.redirect(new URL("/login", req.url));
 
-    console.log(
-      "5. version check:",
-      user.sessionVersion ?? 1,
-      "vs cookie:",
-      session.sessionVersion,
-    );
+   
     if ((user.sessionVersion ?? 1) !== session.sessionVersion) {
       console.log("6. REDIRECTING — version mismatch");
       return NextResponse.redirect(new URL("/login", req.url));
@@ -56,13 +41,8 @@ export async function proxy(req) {
       return NextResponse.redirect(new URL("/banned", req.url));
     }
 
-    if (!user.emailVerified) {
-      return NextResponse.redirect(
-        new URL(
-          `/login`,
-          req.url,
-        ),
-      );
+    if (user.provider !== "guest" && !user.emailVerified) {
+      return NextResponse.redirect(new URL(`/login`, req.url));
     }
 
     if (isAdmin && user.role !== "admin") {

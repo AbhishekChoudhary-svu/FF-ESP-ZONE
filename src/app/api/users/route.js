@@ -17,8 +17,6 @@ export async function GET(req) {
 
     if (!user) return logoutResponse("User not found")
     if (user.isBanned) return logoutResponse("Account banned")
-
-    // Session version check — catches role changes, bans, forced logouts
     if ((user.sessionVersion ?? 1) !== session.sessionVersion) {
       return logoutResponse("Session expired")
     }
@@ -28,19 +26,20 @@ export async function GET(req) {
       user: {
         id: user._id,
         uid: user.uid,
-        email: user.email,
+        email: user.email ?? null,
         emailVerified: user.emailVerified,
         provider: user.provider,
         username: user.username,
-        bio: user.bio,
-        ffUid: user.ffUid,
+        bio: user.bio ?? "",
+        ffUid: user.ffUid ?? null,
         rank: user.rank,
         playstyle: user.playstyle,
         tournamentsJoined: user.tournamentsJoined,
         role: user.role,
         plan: user.plan,
-        lastLoginAt: user.lastLoginAt,
+        lastLoginAt: user.lastLoginAt ?? null,
         createdAt: user.createdAt,
+        isGuest: user.provider === "guest",  // ← handy flag for frontend
       },
     })
   } catch (err) {

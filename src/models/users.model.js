@@ -1,15 +1,37 @@
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
     uid: { type: String, required: true, unique: true, index: true },
-    email: { type: String, required: true, unique: true, lowercase: true, index: true },
+    email: {
+      type: String,
+      required: function () {
+        return this.provider !== "guest";
+      },
+      unique: true,
+      sparse: true,
+      lowercase: true,
+      index: true,
+    },
     password: { type: String, default: "" }, // empty for google users
     emailVerified: { type: Boolean, default: false },
     provider: { type: String, default: "password" },
-    username: { type: String, required: true, unique: true, trim: true, index: true },
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      index: true,
+    },
     bio: { type: String, default: "", maxlength: 160 },
-    ffUid: { type: String, required: true, unique: true },
+    ffUid: {
+      type: String,
+      required: function () {
+        return this.provider !== "guest";
+      },
+      unique: true,
+      sparse: true,
+    },
     rank: {
       type: String,
       enum: ["Beginner", "Intermediate", "Advanced", "Professional"],
@@ -21,7 +43,11 @@ const userSchema = new mongoose.Schema(
       default: "Primary Rusher",
     },
     tournamentsJoined: { type: Number, default: 0 },
-    role: { type: String, enum: ["user", "admin", "moderator"], default: "user" },
+    role: {
+      type: String,
+      enum: ["user", "admin", "moderator", "guest"],
+      default: "user",
+    },
     plan: { type: String, enum: ["basic", "pro", "elite"], default: "basic" },
     isBanned: { type: Boolean, default: false },
     banReason: { type: String, default: "" },
@@ -32,7 +58,7 @@ const userSchema = new mongoose.Schema(
     otp: { type: String, default: null },
     otpExpiresAt: { type: Date, default: null },
   },
-  { timestamps: true }
-)
+  { timestamps: true },
+);
 
-export const User = mongoose.models.User || mongoose.model("User", userSchema)
+export const User = mongoose.models.User || mongoose.model("User", userSchema);
