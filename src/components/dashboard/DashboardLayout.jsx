@@ -6,7 +6,7 @@ import { PaidTournamentsTab } from "./tabs/PaidTournament";
 import { PlayerRecruitmentTab } from "./tabs/Recruitment";
 import { OfficialEventsTab } from "./tabs/OfficialTournament";
 import { WorldChatTab } from "./tabs/WorldChat";
-import { UserProfile } from "./UserProfile";
+import { UserProfile } from "./user-profile/UserProfile";
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
 
