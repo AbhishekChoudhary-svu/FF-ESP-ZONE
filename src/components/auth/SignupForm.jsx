@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { GoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@react-oauth/google";
 import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -66,36 +66,53 @@ export function SignupForm() {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    setLoadingGoogle(true);
-    try {
-      const res = await fetch("/api/auth/googleAuth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken: credentialResponse.credential }),
-      });
+  // Remove handleGoogleSuccess and handleGoogleError functions
+  // Add this instead:
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoadingGoogle(true);
+      try {
+        const userInfoRes = await fetch(
+          "https://www.googleapis.com/oauth2/v3/userinfo",
+          {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+          },
+        );
+        const userInfo = await userInfoRes.json();
 
-      const data = await res.json();
+        if (!userInfo.sub) {
+          toast.error("Failed to get Google user info");
+          return;
+        }
 
-      if (!res.ok) {
-        toast.error(data.error || "Cross-platform authentication failure");
-        return;
+        const res = await fetch("/api/auth/googleAuth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userInfo }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          toast.error(data.error || "Google sign-in failed");
+          return;
+        }
+
+        toast.success("Google link sequence authorized");
+        window.location.href = "/dashboard";
+      } catch (err) {
+        console.error(err);
+        toast.error("Google sign-in failed");
+      } finally {
+        setLoadingGoogle(false);
       }
-
-      toast.success("Google link sequence authorized");
-      window.location.href = "/dashboard";
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error(err);
-      toast.error(err.message || "Google routing system bypass terminated");
-    } finally {
+      toast.error("Google sign-in failed");
       setLoadingGoogle(false);
-    }
-  };
-
-  const handleGoogleError = () => {
-    toast.error("Google login was cancelled or failed");
-    setLoadingGoogle(false);
-  };
+    },
+    flow: "implicit",
+  });
 
   const handleGuestLogin = async () => {
     setLoadingGuest(true);
@@ -124,14 +141,14 @@ export function SignupForm() {
 
   return (
     <div className="w-full max-w-md mx-auto p-5 bg-[#0a0c10] border border-[#1e2330] rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.4)] font-['Rajdhani'] text-[#d0d5df]">
-      
       {/* Tactical Registration Header */}
       <div className="border-b border-[#141822] pb-4 mb-5">
         <h3 className="text-lg font-bold font-['Orbitron'] tracking-wider text-[#ffaa00] uppercase">
           🛠️ Profile Provisioning
         </h3>
         <p className="text-[11px] text-[#4e5d78] font-bold uppercase tracking-wide mt-0.5">
-          Deploy node attributes to register your identification within the network
+          Deploy node attributes to register your identification within the
+          network
         </p>
       </div>
 
@@ -231,7 +248,8 @@ export function SignupForm() {
         >
           {loading ? (
             <span className="flex items-center gap-2 tracking-widest">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#ffaa00]" /> Generating Account Instance...
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#ffaa00]" />{" "}
+              Generating Account Instance...
             </span>
           ) : (
             "Deploy System Profile"
@@ -252,33 +270,19 @@ export function SignupForm() {
 
         {/* Alternative Processing Options */}
         <div className="grid grid-cols-2 gap-3">
-            {/* Google — styled button with invisible GoogleLogin overlay */}
-          <div className="relative">
-            <button
-              type="button"
-              disabled={loading || loadingGoogle || loadingGuest}
-              className="w-full flex justify-center items-center h-9 bg-[#07080b] border border-[#1e2330] hover:border-[#8090a0]/40 text-[#8090a0] hover:text-white font-['Orbitron'] font-bold text-[10px] uppercase tracking-wider rounded transition-all duration-150 pointer-events-none disabled:opacity-50"
-            >
-              {loadingGoogle ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                "Google Link"
-              )}
-            </button>
-            {/* Invisible GoogleLogin sits on top and captures the click */}
-            {!loading && !loadingGoogle && !loadingGuest && (
-              <div className="absolute inset-0 opacity-0 overflow-hidden rounded cursor-pointer">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                  useOneTap={false}
-                  type="standard"
-                  size="large"
-                  width="300"
-                />
-              </div>
+          {/* Google — styled button with invisible GoogleLogin overlay */}
+          <button
+            type="button"
+            onClick={() => googleLogin()}
+            disabled={loading || loadingGoogle || loadingGuest}
+            className="flex justify-center items-center h-9 bg-[#07080b] border border-[#1e2330] hover:border-[#8090a0]/40 text-[#8090a0] hover:text-white font-['Orbitron'] font-bold text-[10px] uppercase tracking-wider rounded transition-all duration-150 cursor-pointer disabled:opacity-50"
+          >
+            {loadingGoogle ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              "Google Link"
             )}
-          </div>
+          </button>
 
           <button
             type="button"
@@ -298,15 +302,14 @@ export function SignupForm() {
         <div className="text-center pt-3 border-t border-[#141822]/60 mt-2">
           <p className="text-[11px] font-bold uppercase tracking-wider text-[#4e5d78]">
             Registered operator verified?{" "}
-            <Link 
-              href="/login" 
+            <Link
+              href="/login"
               className="text-[#ffaa00] hover:text-white underline underline-offset-4 transition-colors ml-1 font-extrabold"
             >
               Access Identity Node
             </Link>
           </p>
         </div>
-
       </form>
     </div>
   );

@@ -1,112 +1,120 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { GoogleLogin } from "@react-oauth/google";
-import { toast } from "react-hot-toast";
-import { Loader2 } from "lucide-react";
-import Link from "next/link";
+import { useState } from "react"
+import { useGoogleLogin } from "@react-oauth/google"
+import { toast } from "react-hot-toast"
+import { Loader2 } from "lucide-react"
+import Link from "next/link"
 
 export function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [loadingGoogle, setLoadingGoogle] = useState(false);
-  const [loadingGuest, setLoadingGuest] = useState(false);
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [loadingGoogle, setLoadingGoogle] = useState(false)
+  const [loadingGuest, setLoadingGuest] = useState(false)
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
+    e.preventDefault()
+    setLoading(true)
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
+      })
+      const data = await response.json()
 
       if (response.status === 403) {
-        toast.error(data.error || "Verification sequence incomplete");
-        window.location.href = `/verifyEmail?email=${encodeURIComponent(email)}`;
-        return;
+        toast.error(data.error || "Please verify your email first")
+        window.location.href = `/verifyEmail?email=${encodeURIComponent(email)}`
+        return
       }
-
       if (!response.ok) {
-        toast.error(data.error || "Authentication module failure");
-        return;
+        toast.error(data.error || "Login failed")
+        return
       }
-
-      toast.success(data.message || "Access clearance granted");
-      window.location.href = "/dashboard";
+      toast.success(data.message || "Logged in successfully")
+      window.location.href = "/dashboard"
     } catch (err) {
-      console.error(err);
-      toast.error(err.message || "Network grid connection error");
+      console.error(err)
+      toast.error("Something went wrong")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    setLoadingGoogle(true);
-    try {
-      const res = await fetch("/api/auth/googleAuth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken: credentialResponse.credential }),
-      });
+  // useGoogleLogin with access_token flow — works on all devices and browsers
+  // no popup, no third party cookie issues, no origin blocking
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoadingGoogle(true)
+      try {
+        // Fetch user info using the access token
+        const userInfoRes = await fetch(
+          "https://www.googleapis.com/oauth2/v3/userinfo",
+          { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
+        )
+        const userInfo = await userInfoRes.json()
 
-      const data = await res.json();
+        if (!userInfo.sub) {
+          toast.error("Failed to get Google user info")
+          return
+        }
 
-      if (!res.ok) {
-        toast.error(data.error || "Cross-platform authentication failure");
-        return;
+        const res = await fetch("/api/auth/googleAuth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userInfo }),
+        })
+        const data = await res.json()
+
+        if (!res.ok) {
+          toast.error(data.error || "Google sign-in failed")
+          return
+        }
+
+        toast.success("Logged in successfully")
+        window.location.href = "/dashboard"
+      } catch (err) {
+        console.error(err)
+        toast.error("Google sign-in failed")
+      } finally {
+        setLoadingGoogle(false)
       }
-
-      toast.success("Google link sequence authorized");
-      window.location.href = "/dashboard";
-    } catch (err) {
-      console.error(err);
-      toast.error(err.message || "Google routing system bypass terminated");
-    } finally {
-      setLoadingGoogle(false);
-    }
-  };
-
-  const handleGoogleError = () => {
-    toast.error("Google login was cancelled or failed");
-    setLoadingGoogle(false);
-  };
+    },
+    onError: (err) => {
+      console.error(err)
+      toast.error("Google sign-in failed")
+      setLoadingGoogle(false)
+    },
+    flow: "implicit",
+  })
 
   const handleGuestLogin = async () => {
-    setLoadingGuest(true);
+    setLoadingGuest(true)
     try {
       const res = await fetch("/api/auth/guest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-      });
-
-      const data = await res.json();
-
+      })
+      const data = await res.json()
       if (!res.ok) {
-        toast.error(data.error || "Failed to provision localized terminal credentials");
-        return;
+        toast.error(data.error || "Guest login failed")
+        return
       }
-
-      toast.success("Temporary baseline credentials deployed");
-      window.location.href = "/dashboard";
+      toast.success("Logged in as guest")
+      window.location.href = "/dashboard"
     } catch (err) {
-      console.error(err);
-      toast.error("An error occurred during sandbox profile initialization");
+      console.error(err)
+      toast.error("Something went wrong")
     } finally {
-      setLoadingGuest(false);
+      setLoadingGuest(false)
     }
-  };
+  }
 
   return (
     <div className="w-full max-w-md mx-auto p-5 bg-[#0a0c10] border border-[#1e2330] rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.4)] font-['Rajdhani'] text-[#d0d5df]">
 
-      {/* Header */}
       <div className="border-b border-[#141822] pb-4 mb-5">
         <h3 className="text-lg font-bold font-['Orbitron'] tracking-wider text-[#ffaa00] uppercase">
           🔒 Sector Authentication
@@ -117,8 +125,6 @@ export function LoginForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-
-        {/* Email */}
         <div className="space-y-1.5">
           <label className="block text-xs font-bold font-['Orbitron'] uppercase tracking-widest text-[#8090a0]">
             Identity Matrix // Email
@@ -134,7 +140,6 @@ export function LoginForm() {
           />
         </div>
 
-        {/* Password */}
         <div className="space-y-1.5">
           <label className="block text-xs font-bold font-['Orbitron'] uppercase tracking-widest text-[#8090a0]">
             Access Key // Password
@@ -150,7 +155,6 @@ export function LoginForm() {
           />
         </div>
 
-        {/* Submit */}
         <button
           type="submit"
           disabled={loading || loadingGoogle || loadingGuest}
@@ -158,14 +162,11 @@ export function LoginForm() {
         >
           {loading ? (
             <span className="flex items-center gap-2 tracking-widest">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#ffaa00]" /> Processing Clearance...
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#ffaa00]" /> Processing...
             </span>
-          ) : (
-            "Initialize Connection"
-          )}
+          ) : "Initialize Connection"}
         </button>
 
-        {/* Divider */}
         <div className="relative my-6 py-2">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-[#141822]" />
@@ -177,38 +178,18 @@ export function LoginForm() {
           </div>
         </div>
 
-        {/* Google + Guest buttons */}
         <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => googleLogin()}
+            disabled={loading || loadingGoogle || loadingGuest}
+            className="flex justify-center items-center h-9 bg-[#07080b] border border-[#1e2330] hover:border-[#8090a0]/40 text-[#8090a0] hover:text-white font-['Orbitron'] font-bold text-[10px] uppercase tracking-wider rounded transition-all duration-150 cursor-pointer disabled:opacity-50"
+          >
+            {loadingGoogle ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : "Google Link"}
+          </button>
 
-          {/* Google — styled button with invisible GoogleLogin overlay */}
-          <div className="relative">
-            <button
-              type="button"
-              disabled={loading || loadingGoogle || loadingGuest}
-              className="w-full flex justify-center items-center h-9 bg-[#07080b] border border-[#1e2330] hover:border-[#8090a0]/40 text-[#8090a0] hover:text-white font-['Orbitron'] font-bold text-[10px] uppercase tracking-wider rounded transition-all duration-150 pointer-events-none disabled:opacity-50"
-            >
-              {loadingGoogle ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                "Google Link"
-              )}
-            </button>
-            {/* Invisible GoogleLogin sits on top and captures the click */}
-            {!loading && !loadingGoogle && !loadingGuest && (
-              <div className="absolute inset-0 opacity-0 overflow-hidden rounded cursor-pointer">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                  useOneTap={false}
-                  type="standard"
-                  size="large"
-                  width="300"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Guest */}
           <button
             type="button"
             onClick={handleGuestLogin}
@@ -217,13 +198,10 @@ export function LoginForm() {
           >
             {loadingGuest ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              "Guest Instance"
-            )}
+            ) : "Guest Instance"}
           </button>
         </div>
 
-        {/* Footer */}
         <div className="text-center pt-3 border-t border-[#141822]/60 mt-2">
           <p className="text-[11px] font-bold uppercase tracking-wider text-[#4e5d78]">
             Unregistered Identity Module?{" "}
@@ -235,8 +213,7 @@ export function LoginForm() {
             </Link>
           </p>
         </div>
-
       </form>
     </div>
-  );
+  )
 }

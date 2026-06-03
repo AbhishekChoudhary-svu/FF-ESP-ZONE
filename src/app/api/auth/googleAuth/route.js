@@ -2,29 +2,37 @@ import { NextResponse } from "next/server"
 import dbConnect from "@/lib/dbConnect"
 import { User } from "@/models/users.model"
 import { signSession } from "@/lib/session"
-import { verifyGoogleToken } from "@/lib/googleVerify"
 
 export async function POST(req) {
   try {
-    const { idToken } = await req.json();
-    if (!idToken) {
-      return NextResponse.json({ error: "ID token missing" }, { status: 400 })
+    const { userInfo } = await req.json()
+
+    if (!userInfo?.sub || !userInfo?.email) {
+      return NextResponse.json({ error: "Invalid Google user info" }, { status: 400 })
     }
 
-    
-const decoded = await verifyGoogleToken(idToken);
-
+    if (!userInfo.email_verified) {
+      return NextResponse.json({ error: "Google email not verified" }, { status: 401 })
+    }
 
     await dbConnect()
 
-    let user = await User.findOne({ uid: decoded.uid })
+    let user = await User.findOne({ uid: userInfo.sub })
 
     if (!user) {
+      const emailExists = await User.findOne({ email: userInfo.email })
+      if (emailExists) {
+        return NextResponse.json(
+          { error: "Email already registered with a different method" },
+          { status: 409 }
+        )
+      }
+
       user = await User.create({
-        uid: decoded.uid,
-        email: decoded.email,
-        username: decoded.name || decoded.email.split("@")[0],
-        ffUid: decoded.uid,
+        uid: userInfo.sub,
+        email: userInfo.email,
+        username: userInfo.name || userInfo.email.split("@")[0],
+        ffUid: userInfo.sub,
         emailVerified: true,
         role: "user",
         plan: "basic",
