@@ -68,7 +68,7 @@ function NameBlock({ user, player, isGuest, mobile = false }) {
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2 mb-1 flex-wrap">
         <h2 className={`font-['Orbitron'] font-black text-[#f0f2f5] tracking-wide [text-shadow:0_0_20px_rgba(255,107,0,0.3)] truncate ${
-          mobile ? "text-lg" : "text-2xl lg:text-4xl"
+          mobile ? "text-sm" : "text-2xl lg:text-4xl"
         }`}>
           {user?.username ?? "Guest"}
         </h2>
@@ -94,8 +94,8 @@ function NameBlock({ user, player, isGuest, mobile = false }) {
       )}
 
       {/* Bio — desktop only */}
-      {!mobile && user?.bio && !isGuest && (
-        <p className="text-[14px] text-[#5a6070] italic max-w-lg truncate sm:whitespace-normal">
+      {user?.bio && !isGuest && (
+        <p className={`${mobile ? "text-[10px]" : "text-[14px]"} text-[#5a6070] italic max-w-lg sm:whitespace-normal`}>
           "{user.bio}"
         </p>
       )}
@@ -112,8 +112,8 @@ function NameBlock({ user, player, isGuest, mobile = false }) {
             {player?.isCaptain && <Chip variant="green">Captain</Chip>}
             {player?.isActive  && (
               <Chip variant="green">
-                <span className="inline-block w-1.5 h-1.5 bg-[#4ade80] rounded-full mr-1 align-middle animate-pulse" />
-                {mobile ? "" : "Active"}
+                <span className="inline-block w-1 h-1 bg-[#4ade80] rounded-full mr-1 align-middle animate-pulse" />
+                {mobile ? "Active" : "Active"}
               </Chip>
             )}
           </>
@@ -138,7 +138,7 @@ function ActionButtons({ isGuest, hasPlayer, hasTeam, hasCaptain, team, openDial
         viewClips:    "▶ Clips",
         editTeam:     hasTeam ? "🛡 Edit Team" : "🛡 Create",
         teamDetails:  "🛡 Details",
-        applications: "📋 Apps",
+        applications: "📋 Request",
       }
     : {
         editProfile:  "✏ Edit Profile",

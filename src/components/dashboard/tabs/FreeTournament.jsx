@@ -66,7 +66,7 @@ export function FreeTournamentsTab() {
     <div className="space-y-6 font-['Rajdhani'] text-[#d0d5df]">
 
       {/* Header */}
-      <div className="flex justify-between items-center border-b border-[#141822] pb-3">
+      <div className="flex flex-col md:flex-row gap-2 justify-between items-start border-b border-[#141822] pb-3">
         <div>
           <h3 className="text-xl font-bold font-['Orbitron'] tracking-wider text-white uppercase">
             🏆 Free Arenas
@@ -79,7 +79,7 @@ export function FreeTournamentsTab() {
         {canCreate && (
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-[#141822] border border-[#1e2330] hover:border-[#ff6b00]/40 text-[#8090a0] hover:text-[#ff8c30] hover:bg-[#ff6b00]/5 font-['Orbitron'] font-bold text-xs uppercase tracking-wider rounded transition-all duration-200 cursor-pointer active:scale-95"
+            className="px-4 py-2 bg-[#141822] w-full md:w-fit  border border-[#1e2330] hover:border-[#ff6b00]/40 text-[#8090a0] hover:text-[#ff8c30] hover:bg-[#ff6b00]/5 font-['Orbitron'] font-bold text-xs uppercase tracking-wider rounded transition-all duration-200 cursor-pointer active:scale-95"
           >
             + Host Match
           </button>

@@ -132,7 +132,7 @@ useEffect(() => {
           border-t border-[#1e2330]
           before:content-[''] before:absolute before:top-0 before:left-0 before:right-0
           before:h-[1px] before:bg-gradient-to-r before:from-transparent before:via-[#ff6b00]/40 before:to-transparent">
-          <div className="grid grid-cols-5 h-16">
+          <div className="grid grid-cols-5 h-18">
             {tabs.map((tab) => {
               const active = activeTab === tab.id;
               return (

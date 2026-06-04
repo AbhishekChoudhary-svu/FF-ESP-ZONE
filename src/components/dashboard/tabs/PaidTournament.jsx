@@ -63,7 +63,7 @@ export function PaidTournamentsTab() {
     <div className="space-y-6 font-['Rajdhani'] text-[#d0d5df]">
 
       {/* Header */}
-      <div className="flex justify-between items-center border-b border-[#141822] pb-3">
+      <div className="flex flex-col md:flex-row gap-2 justify-between items-start border-b border-[#141822] pb-3">
         <div>
           <h3 className="text-xl font-bold font-['Orbitron'] tracking-wider text-[#ffaa00] uppercase">
             💎 High-Stakes Arenas
@@ -76,7 +76,7 @@ export function PaidTournamentsTab() {
         {canCreate && (
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-[#ff9a00]/5 border border-[#ff9a00]/20 hover:border-[#ff9a00]/60 text-[#ff9a00] hover:text-white hover:bg-[#ff9a00]/10 font-['Orbitron'] font-bold text-xs uppercase tracking-wider rounded transition-all duration-200 cursor-pointer active:scale-95"
+            className="px-4 py-2 bg-[#ff9a00]/5 border w-full md:w-fit border-[#ff9a00]/20 hover:border-[#ff9a00]/60 text-[#ff9a00] hover:text-white hover:bg-[#ff9a00]/10 font-['Orbitron'] font-bold text-xs uppercase tracking-wider rounded transition-all duration-200 cursor-pointer active:scale-95"
           >
             + Provision Match
           </button>
