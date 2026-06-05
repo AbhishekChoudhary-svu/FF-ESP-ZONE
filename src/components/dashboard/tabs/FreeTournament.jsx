@@ -268,7 +268,7 @@ export function FreeTournamentsTab() {
 
       {/* Create Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-16 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-13 bg-black/80 backdrop-blur-sm">
           <div className="bg-[#0a0c10] border border-[#2a2e3a] w-full max-w-2xl rounded-lg overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
             <div className="p-4 border-b border-[#141822] flex justify-between items-center bg-[#0d0f15]">
               <h3 className="font-['Orbitron'] font-bold text-sm text-white tracking-widest uppercase">
