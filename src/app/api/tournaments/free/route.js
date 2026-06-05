@@ -2,35 +2,67 @@ import { NextResponse } from "next/server"
 import dbConnect from "@/lib/dbConnect"
 import { Tournament } from "@/models/tournaments.model"
 import { Player } from "@/models/players.model"
+import { User } from "@/models/users.model"
 import { verifySession } from "@/lib/session"
 import { checkApiLimit } from "@/lib/rateLimit"
 
-// GET all free tournaments
+// ─── GET all free tournaments ────────────────────────────────────────────────
+// status=all  → no status filter
+// status=upcoming (default) → only upcoming
 export async function GET(req) {
   try {
     await dbConnect()
 
     const { searchParams } = new URL(req.url)
-    const status    = searchParams.get("status") || "upcoming"
-    const gameMode  = searchParams.get("gameMode")
-    const teamMode  = searchParams.get("teamMode")
-    const page      = parseInt(searchParams.get("page") || "1")
-    const limit     = parseInt(searchParams.get("limit") || "10")
-    const skip      = (page - 1) * limit
+    const status   = searchParams.get("status")   || "upcoming"
+    const gameMode = searchParams.get("gameMode")
+    const teamMode = searchParams.get("teamMode")
+    const page     = parseInt(searchParams.get("page")  || "1")
+    const limit    = parseInt(searchParams.get("limit") || "20")
+    const skip     = (page - 1) * limit
 
-    const filter = {
-      tournamentType: "free",
-      isPublished: true,
+    // Resolve caller — captains can see their own unpublished drafts
+    let callerId   = null
+    let callerRole = "guest"
+    try {
+      const raw = req.cookies.get("session")?.value
+      if (raw) {
+        const session = verifySession(raw)
+        if (session?.uid) {
+          const user = await User.findOne({ uid: session.uid }).select("_id role").lean()
+          if (user) { callerId = user._id; callerRole = user.role }
+        }
+      }
+    } catch {}
+
+    const isPrivileged = ["admin", "moderator"].includes(callerRole)
+
+    const filter = { tournamentType: "free" }
+
+    // Privileged users see everything; others only see published
+    if (!isPrivileged) {
+      // Captains can also see their own unpublished drafts
+      if (callerId) {
+        filter.$or = [
+          { isPublished: true },
+          { organizer: callerId },
+        ]
+      } else {
+        filter.isPublished = true
+      }
     }
 
-    if (status)   filter.status   = status
+    if (status && status !== "all") {
+      filter.status = status
+    }
+
     if (gameMode) filter.gameMode = gameMode
     if (teamMode) filter.teamMode = teamMode
 
     const [tournaments, total] = await Promise.all([
       Tournament.find(filter)
-        .populate("organizer", "username role")
-        .sort({ startDate: 1 })
+        .populate("organizer", "username role uid")
+        .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
@@ -40,12 +72,7 @@ export async function GET(req) {
     return NextResponse.json({
       success: true,
       tournaments,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
     })
   } catch (err) {
     console.error("GET /api/tournaments/free error:", err)
@@ -53,11 +80,12 @@ export async function GET(req) {
   }
 }
 
-// POST create free tournament — any captain can create
+// ─── POST create free tournament — any captain ──────────────────────────────
 export async function POST(req) {
-  const ip = req.headers.get("x-forwarded-for") ??
-             req.headers.get("x-real-ip") ??
-             "unknown"
+  const ip =
+    req.headers.get("x-forwarded-for") ??
+    req.headers.get("x-real-ip") ??
+    "unknown"
 
   try {
     await checkApiLimit(ip)
@@ -70,8 +98,10 @@ export async function POST(req) {
 
     await dbConnect()
 
-    // Must have a player profile to create a tournament
-    const player = await Player.findOne({ userId: session.uid })
+    const user = await User.findOne({ uid: session.uid }).lean()
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
+
+    const player = await Player.findOne({ userId: user._id })
     if (!player) {
       return NextResponse.json(
         { error: "You must have a player profile to create a tournament" },
@@ -79,7 +109,6 @@ export async function POST(req) {
       )
     }
 
-    // Must be a captain
     if (!player.isCaptain) {
       return NextResponse.json(
         { error: "Only team captains can create tournaments" },
@@ -89,26 +118,17 @@ export async function POST(req) {
 
     const body = await req.json()
     const {
-      name,
-      description,
-      rules,
-      gameMode,
-      teamMode,
-      registrationDeadline,
-      startDate,
-      endDate,
-      prizePool,
-      prizeDistribution,
-      bannerImage,
-      region,
+      name, description, rules,
+      gameMode, teamMode,
+      prizePool, prizeDistribution,
+      registrationDeadline, startDate, endDate,
+      bannerImage, region,
     } = body
 
-    // Validate required fields
     if (!name || !gameMode || !teamMode || !startDate || !endDate || !registrationDeadline) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // CS only allows Squad
     if (gameMode === "CS" && teamMode !== "Squad") {
       return NextResponse.json(
         { error: "Clash Squad only supports Squad team mode" },
@@ -117,23 +137,20 @@ export async function POST(req) {
     }
 
     const tournament = await Tournament.create({
-      name,
-      description,
-      rules,
-      gameMode,
-      teamMode,
+      name, description, rules,
+      gameMode, teamMode,
+      prizePool:            prizePool || 0,
+      prizeDistribution:    prizeDistribution || [],
       registrationDeadline: new Date(registrationDeadline),
       startDate:            new Date(startDate),
       endDate:              new Date(endDate),
-      prizePool:            prizePool || 0,
-      prizeDistribution:    prizeDistribution || [],
       bannerImage:          bannerImage || "",
       region:               region || "India",
       tournamentType:       "free",
       entryFee:             0,
-      organizer:            session.uid,
+      organizer:            user._id,
       organizerRole:        "user",
-      isPublished:          true,    // free tournaments auto-publish
+      isPublished:          true,
       status:               "upcoming",
     })
 

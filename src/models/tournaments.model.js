@@ -1,4 +1,4 @@
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 
 // ── Participant entry ───────────────────────────────────────
 // Stores who joined and in what capacity
@@ -65,8 +65,8 @@ const participantSchema = new mongoose.Schema(
       default: "",
     },
   },
-  { _id: true }
-)
+  { _id: true },
+);
 
 // ── Main Tournament Schema ──────────────────────────────────
 const tournamentSchema = new mongoose.Schema(
@@ -130,20 +130,17 @@ const tournamentSchema = new mongoose.Schema(
     // CS Squad  → 2 slots  × 4 =  8 players (4v4)
     totalSlots: {
       type: Number,
-      required: true,
-      // BR Squad=12, BR Duo=24, BR Solo=48, CS=2
+      default: 0, // ← was required: true
     },
 
     playersPerSlot: {
       type: Number,
-      required: true,
-      // Squad=4, Duo=2, Solo=1
+      default: 0, // ← was required: true
     },
 
-    // Total players = totalSlots × playersPerSlot
     totalPlayers: {
       type: Number,
-      required: true,
+      default: 0, // ← was required: true
     },
 
     filledSlots: {
@@ -167,9 +164,9 @@ const tournamentSchema = new mongoose.Schema(
     // Prize breakdown — 1st, 2nd, 3rd etc
     prizeDistribution: [
       {
-        placement: { type: Number },         // 1, 2, 3...
-        prize: { type: Number },             // amount in rupees
-        description: { type: String },       // "1st Place", "MVP" etc
+        placement: { type: Number }, // 1, 2, 3...
+        prize: { type: Number }, // amount in rupees
+        description: { type: String }, // "1st Place", "MVP" etc
       },
     ],
 
@@ -226,11 +223,11 @@ const tournamentSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
-        "draft",        // created, not published yet
-        "upcoming",     // published, registration open
-        "ongoing",      // match in progress
-        "completed",    // match finished
-        "cancelled",    // cancelled by organizer/admin
+        "draft", // created, not published yet
+        "upcoming", // published, registration open
+        "ongoing", // match in progress
+        "completed", // match finished
+        "cancelled", // cancelled by organizer/admin
       ],
       default: "draft",
       index: true,
@@ -266,90 +263,90 @@ const tournamentSchema = new mongoose.Schema(
       default: "Free Fire",
     },
   },
-  { timestamps: true }
-)
+  { timestamps: true },
+);
 
 // ── Virtual: spots remaining ────────────────────────────────
 tournamentSchema.virtual("slotsRemaining").get(function () {
-  return this.totalSlots - this.filledSlots
-})
+  return this.totalSlots - this.filledSlots;
+});
 
 // ── Virtual: is registration open ──────────────────────────
 tournamentSchema.virtual("isRegistrationOpen").get(function () {
-  const now = new Date()
+  const now = new Date();
   return (
     this.status === "upcoming" &&
     this.isPublished &&
     now < this.registrationDeadline &&
     this.filledSlots < this.totalSlots
-  )
-})
+  );
+});
 
 // ── Virtual: is room published ──────────────────────────────
 tournamentSchema.virtual("hasRoomCredentials").get(function () {
-  return Boolean(this.roomId && this.roomPassword)
-})
+  return Boolean(this.roomId && this.roomPassword);
+});
 
 // ── Pre-save: validate gameMode + teamMode combo ────────────
 tournamentSchema.pre("save", function (next) {
   // Clash Squad only allows Squad mode
   if (this.gameMode === "CS" && this.teamMode !== "Squad") {
-    return next(new Error("Clash Squad only supports Squad team mode"))
+    return next(new Error("Clash Squad only supports Squad team mode"));
   }
 
   // Auto-calculate slots based on gameMode + teamMode
   if (this.gameMode === "CS") {
-    this.totalSlots = 2        // 4v4
-    this.playersPerSlot = 4
-    this.totalPlayers = 8
+    this.totalSlots = 2; // 4v4
+    this.playersPerSlot = 4;
+    this.totalPlayers = 8;
   } else {
     // BR
     if (this.teamMode === "Squad") {
-      this.totalSlots = 12
-      this.playersPerSlot = 4
-      this.totalPlayers = 48
+      this.totalSlots = 12;
+      this.playersPerSlot = 4;
+      this.totalPlayers = 48;
     } else if (this.teamMode === "Duo") {
-      this.totalSlots = 24
-      this.playersPerSlot = 2
-      this.totalPlayers = 48
+      this.totalSlots = 24;
+      this.playersPerSlot = 2;
+      this.totalPlayers = 48;
     } else {
       // Solo
-      this.totalSlots = 48
-      this.playersPerSlot = 1
-      this.totalPlayers = 48
+      this.totalSlots = 48;
+      this.playersPerSlot = 1;
+      this.totalPlayers = 48;
     }
   }
 
   // Paid tournaments must have entry fee > 0
   if (this.tournamentType === "paid" && this.entryFee <= 0) {
-    return next(new Error("Paid tournaments must have an entry fee"))
+    return next(new Error("Paid tournaments must have an entry fee"));
   }
 
   // Free tournaments must have entry fee = 0
   if (this.tournamentType === "free" && this.entryFee > 0) {
-    return next(new Error("Free tournaments cannot have an entry fee"))
+    return next(new Error("Free tournaments cannot have an entry fee"));
   }
 
   // Registration deadline must be before start date
   if (this.registrationDeadline >= this.startDate) {
-    return next(new Error("Registration deadline must be before start date"))
+    return next(new Error("Registration deadline must be before start date"));
   }
 
   // Start must be before end
   if (this.startDate >= this.endDate) {
-    return next(new Error("Start date must be before end date"))
+    return next(new Error("Start date must be before end date"));
   }
 
-  next()
-})
+  next();
+});
 
 // ── Indexes ─────────────────────────────────────────────────
-tournamentSchema.index({ status: 1, tournamentType: 1 })
-tournamentSchema.index({ startDate: 1 })
-tournamentSchema.index({ organizer: 1 })
+tournamentSchema.index({ status: 1, tournamentType: 1 });
+tournamentSchema.index({ startDate: 1 });
+tournamentSchema.index({ organizer: 1 });
 
-tournamentSchema.set("toJSON", { virtuals: true })
-tournamentSchema.set("toObject", { virtuals: true })
+tournamentSchema.set("toJSON", { virtuals: true });
+tournamentSchema.set("toObject", { virtuals: true });
 
 export const Tournament =
-  mongoose.models.Tournament || mongoose.model("Tournament", tournamentSchema)
+  mongoose.models.Tournament || mongoose.model("Tournament", tournamentSchema);

@@ -92,9 +92,9 @@ function EventDetailDialog({ event, onClose }) {
   if (!event) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/85 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 p-4 pb-16 flex items-end sm:items-center justify-center sm:p-4 bg-black/85 backdrop-blur-sm">
       {/* Bottom sheet on mobile, centered modal on sm+ */}
-      <div className="relative w-full sm:max-w-2xl bg-[#0a0c10] border border-[#2a2e3a] sm:rounded-xl rounded-t-2xl overflow-hidden shadow-[0_-4px_40px_rgba(0,0,0,0.7)] sm:shadow-[0_10px_40px_rgba(0,0,0,0.7)] font-['Rajdhani']">
+      <div className="relative w-full max-w-2xl bg-[#0a0c10] border border-[#2a2e3a] sm:rounded-xl rounded-t-2xl overflow-hidden shadow-[0_-4px_40px_rgba(0,0,0,0.7)] sm:shadow-[0_10px_40px_rgba(0,0,0,0.7)] font-['Rajdhani']">
 
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#ff6b00] to-transparent" />
         {/* Corner accents — only on sm+ */}
@@ -323,9 +323,9 @@ function EventFormDialog({ initial, onClose, onSuccess, mode = "create" }) {
   const selectCls = "w-full appearance-none px-3 py-2.5 bg-[#07080b] border border-[#1e2330] rounded-lg text-[#d0d5df] text-sm font-bold uppercase tracking-wider focus:outline-none focus:border-[#ff6b00]/60 cursor-pointer transition-colors"
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/85 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 p-4 pb-16 flex items-end sm:items-center justify-center sm:p-4 bg-black/85 backdrop-blur-sm">
       {/* Bottom sheet on mobile */}
-      <div className="relative w-full sm:max-w-2xl bg-[#0a0c10] border border-[#2a2e3a] sm:rounded-xl rounded-t-2xl overflow-hidden shadow-[0_-4px_40px_rgba(0,0,0,0.7)] sm:shadow-[0_10px_40px_rgba(0,0,0,0.7)] font-['Rajdhani']">
+      <div className="relative w-full max-w-2xl bg-[#0a0c10] border border-[#2a2e3a] sm:rounded-xl rounded-t-2xl overflow-hidden shadow-[0_-4px_40px_rgba(0,0,0,0.7)] sm:shadow-[0_10px_40px_rgba(0,0,0,0.7)] font-['Rajdhani']">
 
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#ff6b00] to-transparent" />
 
@@ -629,7 +629,7 @@ export function OfficialEventsTab() {
             {events.map((event) => (
               <div
                 key={event._id}
-                className="relative p-4 sm:p-5 bg-[#0a0c10] border border-[#2a2e3a] rounded-xl overflow-hidden"
+                className="relative p-4 pb-16 sm:p-5 bg-[#0a0c10] border border-[#2a2e3a] rounded-xl overflow-hidden"
                 style={{ boxShadow: "0 0 30px rgba(255,107,0,0.04)" }}
               >
                 {/* Top gradient line */}
