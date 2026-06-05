@@ -174,15 +174,13 @@ export async function POST(req) {
       }
     }
 
-    // ── Payment check for paid tournaments ──────────────────
     if (tournament.tournamentType === "paid") {
-      if (!paymentId) {
-        return NextResponse.json(
-          { error: "Payment required to join this tournament" },
-          { status: 402 },
-        );
-      }
-      // TODO: verify paymentId with your payment gateway here
+      return NextResponse.json(
+        {
+          error: "Paid tournaments must be joined through Razorpay checkout",
+        },
+        { status: 403 },
+      );
     }
 
     // ── Add participant ─────────────────────────────────────

@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 import MyContext from "@/context/ThemeProvider"
 import toast from "react-hot-toast"
-import Script from "next/script"
+import RazorpayJoinDialog from "./dialog/RazorpayJoinDialog"
 
 /* ─────────────────────── helpers ─────────────────────────── */
 
@@ -49,7 +49,6 @@ function StatusBadge({ status }) {
 /* ─────────────────────── Portal Dialog ───────────────────── */
 
 function Dialog({ open, onClose, title, children, maxWidth = "max-w-lg" }) {
-  // Close on Escape
   useEffect(() => {
     if (!open) return
     const handle = (e) => { if (e.key === "Escape") onClose() }
@@ -93,12 +92,7 @@ const STATUS_TRANSITIONS = {
   completed: [],
   cancelled: [],
 }
-const ALL_STATUSES = [
-  "upcoming",
-  "ongoing",
-  "completed",
-  "cancelled",
-]
+const ALL_STATUSES = ["upcoming", "ongoing", "completed", "cancelled"]
 
 const STATUS_LABELS = {
   upcoming:  { label: "Publish (Upcoming)", color: "border-[#63b3ed]/40 text-[#63b3ed] hover:bg-[#63b3ed]/10" },
@@ -107,14 +101,12 @@ const STATUS_LABELS = {
   cancelled: { label: "Cancel Tournament",  color: "border-red-500/40  text-red-400   hover:bg-red-500/10" },
 }
 
-function StatusDialog({ open, onClose, tournament,isPrivileged, onSuccess }) {
+function StatusDialog({ open, onClose, tournament, isPrivileged, onSuccess }) {
   const [loading, setLoading] = useState(false)
-  
 
-const next =
-  isPrivileged
+  const next = isPrivileged
     ? ALL_STATUSES.filter(s => s !== tournament?.status)
-    : STATUS_TRANSITIONS[tournament?.status] ?? [];
+    : STATUS_TRANSITIONS[tournament?.status] ?? []
 
   const handleChange = async (newStatus) => {
     setLoading(true)
@@ -143,9 +135,7 @@ const next =
 
         {next.length === 0 ? (
           <div className="p-4 bg-[#07080b] border border-[#1e2330] rounded-lg text-center">
-            <p className="text-sm text-[#4e5d78] font-bold uppercase tracking-wider">
-              No further transitions available
-            </p>
+            <p className="text-sm text-[#4e5d78] font-bold uppercase tracking-wider">No further transitions available</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -180,182 +170,194 @@ const next =
 
 /* ───────────────────── Razorpay Join Dialog ──────────────── */
 
-function RazorpayJoinDialog({ open, onClose, tournament, onSuccess }) {
-  const ctx     = useContext(MyContext)
-  const [loading, setLoading] = useState(false)
-  const [step,    setStep]    = useState("confirm") // "confirm" | "processing" | "done"
+// function RazorpayJoinDialog({ open, onClose, tournament, onSuccess }) {
+//   const ctx     = useContext(MyContext)
+//   const [loading, setLoading] = useState(false)
+//   const [step,    setStep]    = useState("confirm") // "confirm" | "processing" | "done"
 
-  const player  = ctx?.player
-  const team    = ctx?.team
-  const members = team?.players ?? []
+//   // FIX: reset step every time dialog opens so a re-open after dismissal starts fresh
+//   useEffect(() => {
+//     if (open) setStep("confirm")
+//   }, [open])
 
-  const teamMode  = tournament?.teamMode
-  const isSquad   = teamMode === "Squad"
-  const isDuo     = teamMode === "Duo"
+//   const player  = ctx?.player
+//   const team    = ctx?.team
 
-  const joiningMembers = isSquad
-    ? members.slice(0, 4)
-    : isDuo
-    ? members.slice(0, 2)
-    : [player]
+//   // FIX: use populated players from team context (they carry userId for display)
+//   const members = team?.players ?? []
 
-  // Load Razorpay script dynamically
-  const loadRazorpay = () =>
-    new Promise((resolve) => {
-      if (window.Razorpay) { resolve(true); return }
-      const s = document.createElement("script")
-      s.src = "https://checkout.razorpay.com/v1/checkout.js"
-      s.onload  = () => resolve(true)
-      s.onerror = () => resolve(false)
-      document.body.appendChild(s)
-    })
+//   const teamMode  = tournament?.teamMode
+//   const isSquad   = teamMode === "Squad"
+//   const isDuo     = teamMode === "Duo"
 
-  const handlePay = async () => {
-    setLoading(true)
-    setStep("processing")
+//   const joiningMembers = isSquad
+//     ? members.slice(0, 4)
+//     : isDuo
+//     ? members.slice(0, 2)
+//     : [player]
 
-    try {
-      // 1. Create order on server
-      const orderRes  = await fetch("/api/payments/razorpay", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ tournamentId: tournament._id }),
-      })
-      const orderData = await orderRes.json()
-      if (!orderRes.ok) { toast.error(orderData.error || "Order creation failed"); setStep("confirm"); return }
+//   const loadRazorpay = () =>
+//     new Promise((resolve) => {
+//       if (window.Razorpay) { resolve(true); return }
+//       const s = document.createElement("script")
+//       s.src = "https://checkout.razorpay.com/v1/checkout.js"
+//       s.onload  = () => resolve(true)
+//       s.onerror = () => resolve(false)
+//       document.body.appendChild(s)
+//     })
 
-      // 2. Load Razorpay SDK
-      const loaded = await loadRazorpay()
-      if (!loaded) { toast.error("Razorpay SDK failed to load"); setStep("confirm"); return }
+//   const handlePay = async () => {
+//     setLoading(true)
+//     setStep("processing")
 
-      // 3. Open Razorpay checkout
-      await new Promise((resolve, reject) => {
-        const rzp = new window.Razorpay({
-          key:         orderData.keyId,
-          amount:      orderData.amount,
-          currency:    orderData.currency,
-          name:        "Tournament Arena",
-          description: `Entry Fee — ${orderData.tournamentName}`,
-          order_id:    orderData.orderId,
-          prefill:     orderData.prefill,
-          theme:       { color: "#ff6b00" },
-          modal: {
-            ondismiss: () => reject(new Error("dismissed")),
-          },
-          handler: async (response) => {
-            try {
-              // 4. Verify on server + join
-              const verifyRes  = await fetch("/api/payments/razorpay", {
-                method:  "PUT",
-                headers: { "Content-Type": "application/json" },
-                body:    JSON.stringify({
-                  razorpay_order_id:   response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature:  response.razorpay_signature,
-                  tournamentId:        tournament._id,
-                }),
-              })
-              const verifyData = await verifyRes.json()
-              if (!verifyRes.ok) { toast.error(verifyData.error || "Verification failed"); reject(new Error(verifyData.error)); return }
-              setStep("done")
-              resolve()
-            } catch (e) { reject(e) }
-          },
-        })
-        rzp.open()
-      })
+//     try {
+//       // 1. Create order on server
+//       const orderRes  = await fetch("/api/payments/razorpay", {
+//         method:  "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body:    JSON.stringify({ tournamentId: tournament._id }),
+//       })
+//       const orderData = await orderRes.json()
+//       if (!orderRes.ok) { toast.error(orderData.error || "Order creation failed"); setStep("confirm"); return }
 
-      toast.success("Payment verified! You've joined the tournament 🎮")
-      onSuccess?.()
-      setTimeout(onClose, 1500)
-    } catch (err) {
-      if (err?.message !== "dismissed") {
-        toast.error(err?.message || "Payment failed")
-      }
-      setStep("confirm")
-    } finally {
-      setLoading(false)
-    }
-  }
+//       // 2. Load Razorpay SDK
+//       const loaded = await loadRazorpay()
+//       if (!loaded) { toast.error("Razorpay SDK failed to load"); setStep("confirm"); return }
 
-  return (
-    <Dialog open={open} onClose={onClose} title={`💳 Join — ${tournament?.name}`}>
-      <div className="space-y-5">
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: "Mode",  value: `${tournament?.gameMode} ${tournament?.teamMode}`, color: "text-[#63b3ed]" },
-            { label: "Prize", value: `₹${tournament?.prizePool?.toLocaleString() ?? 0}`, color: "text-green-400" },
-            { label: "Entry", value: `₹${tournament?.entryFee}`, color: "text-[#ff9a00]" },
-          ].map((s, i) => (
-            <div key={i} className="p-3 bg-[#07080b] border border-[#1e2330] rounded-lg text-center">
-              <p className="text-[10px] text-[#4e5d78] uppercase tracking-wider font-bold mb-1">{s.label}</p>
-              <p className={`text-sm font-black font-['Orbitron'] ${s.color}`}>{s.value}</p>
-            </div>
-          ))}
-        </div>
+//       // 3. Open Razorpay checkout
+//       await new Promise((resolve, reject) => {
+//         const rzp = new window.Razorpay({
+//           key:         orderData.keyId,
+//           amount:      orderData.amount,
+//           currency:    orderData.currency,
+//           name:        "Tournament Arena",
+//           description: `Entry Fee — ${orderData.tournamentName}`,
+//           order_id:    orderData.orderId,
+//           prefill:     orderData.prefill,
+//           theme:       { color: "#ff6b00" },
+//           modal: {
+//             ondismiss: () => reject(new Error("dismissed")),
+//           },
+//           handler: async (response) => {
+//             try {
+//               // 4. Verify on server (signature + capture check) + join atomically
+//               const verifyRes  = await fetch("/api/payments/razorpay", {
+//                 method:  "PUT",
+//                 headers: { "Content-Type": "application/json" },
+//                 body:    JSON.stringify({
+//                   razorpay_order_id:   response.razorpay_order_id,
+//                   razorpay_payment_id: response.razorpay_payment_id,
+//                   razorpay_signature:  response.razorpay_signature,
+//                   tournamentId:        tournament._id,
+//                 }),
+//               })
+//               const verifyData = await verifyRes.json()
+//               if (!verifyRes.ok) { toast.error(verifyData.error || "Verification failed"); reject(new Error(verifyData.error)); return }
+//               setStep("done")
+//               resolve()
+//             } catch (e) { reject(e) }
+//           },
+//         })
+//         rzp.open()
+//       })
 
-        {/* Members joining */}
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#4e5d78] mb-3">
-            ◆ {isSquad ? "Squad Members" : isDuo ? "Duo Members" : "Joining As"}
-          </p>
-          <div className="space-y-2">
-            {joiningMembers.map((m, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 bg-[#07080b] border border-[#1e2330] rounded-lg">
-                <div className="w-8 h-8 rounded-lg overflow-hidden border border-[#2a2e3a] bg-[#1a1f2e] flex items-center justify-center flex-shrink-0">
-                  {m?.avatar
-                    ? <img src={m.avatar} className="w-full h-full object-cover" alt="" />
-                    : <span className="text-xs font-black text-[#ff8c30]">{m?.userId?.username?.charAt(0) ?? "?"}</span>
-                  }
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-[#d0d5df]">{m?.userId?.username ?? "Unknown"}</p>
-                  <p className="text-[11px] text-[#4e5d78]">{m?.inGameRole}{m?.isCaptain ? " • Captain" : ""}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+//       toast.success("Payment verified! You've joined the tournament 🎮")
+//       onSuccess?.()
+//       setTimeout(onClose, 1500)
+//     } catch (err) {
+//       if (err?.message !== "dismissed") {
+//         toast.error(err?.message || "Payment failed")
+//       }
+//       setStep("confirm")
+//     } finally {
+//       setLoading(false)
+//     }
+//   }
 
-        {/* Payment breakdown */}
-        <div className="p-4 bg-[#07080b] border border-[#ff9a00]/20 rounded-lg space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-[#8090a0] font-semibold">Entry Fee</span>
-            <span className="font-['Orbitron'] font-black text-[#ffaa00]">₹{tournament?.entryFee}</span>
-          </div>
-          <div className="border-t border-[#1e2330] pt-3">
-            <p className="text-[11px] text-[#4e5d78] leading-relaxed">
-              Secured payment via <span className="text-[#ff9a00] font-bold">Razorpay</span>. UPI, Net Banking, Cards & Wallets accepted.
-            </p>
-          </div>
-        </div>
+//   return (
+//     <Dialog open={open} onClose={onClose} title={`💳 Join — ${tournament?.name}`}>
+//       <div className="space-y-5">
+//         {/* Stats */}
+//         <div className="grid grid-cols-3 gap-3">
+//           {[
+//             { label: "Mode",  value: `${tournament?.gameMode} ${tournament?.teamMode}`, color: "text-[#63b3ed]" },
+//             { label: "Prize", value: `₹${tournament?.prizePool?.toLocaleString() ?? 0}`, color: "text-green-400" },
+//             { label: "Entry", value: `₹${tournament?.entryFee}`, color: "text-[#ff9a00]" },
+//           ].map((s, i) => (
+//             <div key={i} className="p-3 bg-[#07080b] border border-[#1e2330] rounded-lg text-center">
+//               <p className="text-[10px] text-[#4e5d78] uppercase tracking-wider font-bold mb-1">{s.label}</p>
+//               <p className={`text-sm font-black font-['Orbitron'] ${s.color}`}>{s.value}</p>
+//             </div>
+//           ))}
+//         </div>
 
-        {step === "done" ? (
-          <div className="flex items-center justify-center gap-3 py-4 bg-[#4ade80]/10 border border-[#4ade80]/30 rounded-lg">
-            <CheckCircle2 className="w-5 h-5 text-[#4ade80]" />
-            <span className="text-[#4ade80] font-bold uppercase tracking-wider text-sm">Successfully Joined!</span>
-          </div>
-        ) : (
-          <div className="flex gap-3">
-            <button
-              onClick={handlePay}
-              disabled={loading || joiningMembers.length === 0}
-              className="flex-1 py-3 bg-gradient-to-r from-[#ff6b00] to-[#ff9a00] text-white font-bold text-xs uppercase tracking-widest rounded disabled:opacity-50 transition-all"
-            >
-              {loading
-                ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing...</span>
-                : `💳 Pay ₹${tournament?.entryFee} & Join`}
-            </button>
-            <button onClick={onClose} className="px-5 py-3 border border-[#2a2e3a] text-[#8090a0] hover:text-white font-bold text-xs uppercase tracking-widest rounded transition-all">
-              Cancel
-            </button>
-          </div>
-        )}
-      </div>
-    </Dialog>
-  )
-}
+//         {/* Members joining */}
+//         <div>
+//           <p className="text-[10px] font-bold uppercase tracking-widest text-[#4e5d78] mb-3">
+//             ◆ {isSquad ? "Squad Members" : isDuo ? "Duo Members" : "Joining As"}
+//           </p>
+//           <div className="space-y-2">
+//             {joiningMembers.length > 0 ? joiningMembers.map((m, i) => (
+//               <div key={i} className="flex items-center gap-3 p-3 bg-[#07080b] border border-[#1e2330] rounded-lg">
+//                 <div className="w-8 h-8 rounded-lg overflow-hidden border border-[#2a2e3a] bg-[#1a1f2e] flex items-center justify-center flex-shrink-0">
+//                   {m?.avatar
+//                     ? <img src={m.avatar} className="w-full h-full object-cover" alt="" />
+//                     : <span className="text-xs font-black text-[#ff8c30]">{m?.userId?.username?.charAt(0) ?? "?"}</span>
+//                   }
+//                 </div>
+//                 <div className="flex-1">
+//                   <p className="text-sm font-bold text-[#d0d5df]">{m?.userId?.username ?? "Unknown"}</p>
+//                   <p className="text-[11px] text-[#4e5d78]">{m?.inGameRole}{m?.isCaptain ? " • Captain" : ""}</p>
+//                 </div>
+//               </div>
+//             )) : (
+//               <div className="p-4 bg-[#07080b] border border-red-900/30 rounded-lg text-center">
+//                 <p className="text-sm text-red-400 font-bold">
+//                   {isSquad || isDuo ? "Your team needs more members" : "No player profile found"}
+//                 </p>
+//               </div>
+//             )}
+//           </div>
+//         </div>
+
+//         {/* Payment breakdown */}
+//         <div className="p-4 bg-[#07080b] border border-[#ff9a00]/20 rounded-lg space-y-3">
+//           <div className="flex items-center justify-between">
+//             <span className="text-sm text-[#8090a0] font-semibold">Entry Fee</span>
+//             <span className="font-['Orbitron'] font-black text-[#ffaa00]">₹{tournament?.entryFee}</span>
+//           </div>
+//           <div className="border-t border-[#1e2330] pt-3">
+//             <p className="text-[11px] text-[#4e5d78] leading-relaxed">
+//               Secured payment via <span className="text-[#ff9a00] font-bold">Razorpay</span>. UPI, Net Banking, Cards &amp; Wallets accepted.
+//             </p>
+//           </div>
+//         </div>
+
+//         {step === "done" ? (
+//           <div className="flex items-center justify-center gap-3 py-4 bg-[#4ade80]/10 border border-[#4ade80]/30 rounded-lg">
+//             <CheckCircle2 className="w-5 h-5 text-[#4ade80]" />
+//             <span className="text-[#4ade80] font-bold uppercase tracking-wider text-sm">Successfully Joined!</span>
+//           </div>
+//         ) : (
+//           <div className="flex gap-3">
+//             <button
+//               onClick={handlePay}
+//               disabled={loading || joiningMembers.length === 0}
+//               className="flex-1 py-3 bg-gradient-to-r from-[#ff6b00] to-[#ff9a00] text-white font-bold text-xs uppercase tracking-widest rounded disabled:opacity-50 transition-all"
+//             >
+//               {loading
+//                 ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing...</span>
+//                 : `💳 Pay ₹${tournament?.entryFee} & Join`}
+//             </button>
+//             <button onClick={onClose} className="px-5 py-3 border border-[#2a2e3a] text-[#8090a0] hover:text-white font-bold text-xs uppercase tracking-widest rounded transition-all">
+//               Cancel
+//             </button>
+//           </div>
+//         )}
+//       </div>
+//     </Dialog>
+//   )
+// }
 
 /* ─────────────────────── Free Join Dialog ────────────────── */
 
@@ -369,8 +371,9 @@ function JoinDialog({ open, onClose, tournament, onSuccess }) {
 
   const team    = ctx?.team
   const player  = ctx?.player
-  const members = team?.players ?? []
 
+  // FIX: use populated team.players for display, fallback to solo player
+  const members = team?.players ?? []
   const joiningMembers = isSquad
     ? members.slice(0, 4)
     : isDuo
@@ -523,7 +526,6 @@ function ViewDetailsDialog({ open, onClose, tournament }) {
             ))}
           </div>
 
-          {/* Slots progress */}
           <div className="p-4 bg-[#07080b] border border-[#1e2330] rounded-lg">
             <div className="flex justify-between items-center mb-2">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#4e5d78]">◆ Slots Filled</p>
@@ -535,7 +537,6 @@ function ViewDetailsDialog({ open, onClose, tournament }) {
             <p className="text-[11px] text-[#4e5d78] mt-1">{totalSlots - filledSlots} slots remaining</p>
           </div>
 
-          {/* Room credentials */}
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#4e5d78] mb-3">◆ Room Credentials</p>
             {hasRoom ? (
@@ -557,7 +558,6 @@ function ViewDetailsDialog({ open, onClose, tournament }) {
             )}
           </div>
 
-          {/* Dates */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               { label: "Registration Closes", value: formatDate(t?.registrationDeadline) },
@@ -571,7 +571,6 @@ function ViewDetailsDialog({ open, onClose, tournament }) {
             ))}
           </div>
 
-          {/* Rules */}
           {t?.rules && (
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#4e5d78] mb-2">◆ Rules</p>
@@ -581,7 +580,6 @@ function ViewDetailsDialog({ open, onClose, tournament }) {
             </div>
           )}
 
-          {/* Participants */}
           {participants.length > 0 && (
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#4e5d78] mb-3">
@@ -594,7 +592,6 @@ function ViewDetailsDialog({ open, onClose, tournament }) {
                     p.player?.userId?.username ??
                     p.player?.userId?.ffUid ??
                     `Slot ${i + 1}`
-
                   const memberCount = p.members?.length ?? 1
                   const avatar = p.player?.avatar ?? null
                   const initial = name.charAt(0).toUpperCase()
@@ -644,19 +641,12 @@ function ViewDetailsDialog({ open, onClose, tournament }) {
 
 function EditTournamentDialog({ open, onClose, tournament, onSuccess }) {
   const [form, setForm] = useState({
-    name:                 "",
-    description:          "",
-    rules:                "",
-    prizePool:            0,
-    bannerImage:          "",
-    registrationDeadline: "",
-    startDate:            "",
-    endDate:              "",
+    name: "", description: "", rules: "", prizePool: 0,
+    bannerImage: "", registrationDeadline: "", startDate: "", endDate: "",
   })
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState("")
 
-  // Reset form whenever tournament changes or dialog opens
   useEffect(() => {
     if (!open || !tournament) return
     setError("")
@@ -682,7 +672,6 @@ function EditTournamentDialog({ open, onClose, tournament, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError("")
-
     if (!form.registrationDeadline || !form.startDate || !form.endDate) {
       setError("All date fields are required"); return
     }
@@ -692,21 +681,16 @@ function EditTournamentDialog({ open, onClose, tournament, onSuccess }) {
     if (new Date(form.startDate) >= new Date(form.endDate)) {
       setError("Start date must be before end date"); return
     }
-
     setLoading(true)
     try {
       const res  = await fetch(`/api/tournaments/${tournament._id}`, {
         method:  "PATCH",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({
-          name:                 form.name,
-          description:          form.description,
-          rules:                form.rules,
-          prizePool:            form.prizePool,
-          bannerImage:          form.bannerImage,
+          name: form.name, description: form.description, rules: form.rules,
+          prizePool: form.prizePool, bannerImage: form.bannerImage,
           registrationDeadline: form.registrationDeadline,
-          startDate:            form.startDate,
-          endDate:              form.endDate,
+          startDate: form.startDate, endDate: form.endDate,
         }),
       })
       const data = await res.json()
@@ -726,40 +710,32 @@ function EditTournamentDialog({ open, onClose, tournament, onSuccess }) {
       {!canEdit ? (
         <div className="p-4 bg-[#07080b] border border-red-900/30 rounded-lg text-center space-y-2">
           <AlertTriangle className="w-6 h-6 text-red-400 mx-auto" />
-          <p className="text-sm text-red-400 font-bold uppercase tracking-wider">
-            Cannot edit — status: {tournament?.status}
-          </p>
+          <p className="text-sm text-red-400 font-bold uppercase tracking-wider">Cannot edit — status: {tournament?.status}</p>
           <p className="text-xs text-[#4e5d78]">Only draft and upcoming tournaments can be edited.</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Locked fields indicator */}
           <div className="flex flex-wrap gap-2 p-3 bg-[#07080b] border border-[#1e2330] rounded-lg">
             <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 bg-[#ff6b00]/15 text-[#ff8c30] border border-[#ff6b00]/30 rounded">{tournament?.gameMode}</span>
             <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 bg-[#63b3ed]/10 text-[#63b3ed] border border-[#63b3ed]/25 rounded">{tournament?.teamMode}</span>
             <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 bg-[#5a6070]/10 text-[#5a6070] border border-[#5a6070]/25 rounded">🔒 Game mode locked</span>
           </div>
-
           <div>
             <label className={labelCls}>Tournament Name <span className="text-[#ff6b00]">*</span></label>
             <input name="name" value={form.name} onChange={handleChange} required className={inputCls} />
           </div>
-
           <div>
             <label className={labelCls}>Description</label>
             <textarea name="description" value={form.description} onChange={handleChange} rows={3} className={`${inputCls} resize-none`} />
           </div>
-
           <div>
             <label className={labelCls}>Prize Pool (₹)</label>
             <input type="number" name="prizePool" value={form.prizePool} onChange={handleChange} min="0" className={`${inputCls} text-green-400 font-['Orbitron'] font-bold`} />
           </div>
-
           <div>
             <label className={labelCls}>Registration Deadline <span className="text-[#ff6b00]">*</span></label>
             <input type="datetime-local" name="registrationDeadline" value={form.registrationDeadline} onChange={handleChange} required className={inputCls} />
           </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Start Date <span className="text-[#ff6b00]">*</span></label>
@@ -770,23 +746,19 @@ function EditTournamentDialog({ open, onClose, tournament, onSuccess }) {
               <input type="datetime-local" name="endDate" value={form.endDate} onChange={handleChange} required className={inputCls} />
             </div>
           </div>
-
           <div>
             <label className={labelCls}>Rules</label>
             <textarea name="rules" value={form.rules} onChange={handleChange} rows={3} className={`${inputCls} resize-none`} />
           </div>
-
           <div>
             <label className={labelCls}>Banner Image URL</label>
             <input name="bannerImage" value={form.bannerImage} onChange={handleChange} placeholder="https://..." className={inputCls} />
           </div>
-
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" /> {error}
             </div>
           )}
-
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={loading} className="flex-1 py-2.5 bg-gradient-to-r from-[#ff6b00] to-[#ff9a00] text-white font-bold text-xs uppercase tracking-widest rounded disabled:opacity-50 transition-all">
               {loading ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...</span> : "✏ Save Changes"}
@@ -877,7 +849,6 @@ function MatchResultsDialog({ open, onClose, tournament, onSuccess }) {
   const [results,  setResults]  = useState([])
   const [loading,  setLoading]  = useState(false)
 
-  // Always fetch fresh populated tournament so names are correct
   useEffect(() => {
     if (!open || !tournament?._id) return
     setFetching(true)
@@ -906,11 +877,8 @@ function MatchResultsDialog({ open, onClose, tournament, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
-    // Validate placements are filled
     const hasEmpty = results.some((r) => !r.placement)
     if (hasEmpty) { toast.error("Fill in placement for all participants"); return }
-
     setLoading(true)
     try {
       const res  = await fetch(`/api/tournaments/${tournament._id}`, {
@@ -952,7 +920,6 @@ function MatchResultsDialog({ open, onClose, tournament, onSuccess }) {
               ℹ️ Submitting marks the tournament completed and auto-updates all player stats.
             </p>
           </div>
-
           {results.length === 0 ? (
             <div className="text-center py-10 text-[#4e5d78] text-sm font-bold uppercase tracking-wider">
               No participants registered yet
@@ -982,7 +949,6 @@ function MatchResultsDialog({ open, onClose, tournament, onSuccess }) {
               ))}
             </div>
           )}
-
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={loading || results.length === 0} className="flex-1 py-2.5 bg-gradient-to-r from-[#ff6b00] to-[#ff9a00] text-white font-bold text-xs uppercase tracking-widest rounded disabled:opacity-50 transition-all">
               {loading ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Submitting...</span> : "📊 Submit Results"}
@@ -1018,16 +984,13 @@ export function TournamentCard({ tournament: initialTournament, onJoinSuccess })
   const userRole      = currentUser?.role
   const isPrivileged  = ["admin", "moderator"].includes(userRole)
 
-  // Fix: compare organizer._id (Mongo ObjectId) vs user._id (Mongo ObjectId)
-  // Both come from the DB so both are hex strings once serialised via .lean()
-  const organizerId = tournament?.organizer?._id ?? tournament?.organizer
-  const currentMongoId = currentUser?._id ?? currentUser?.mongoId   // however your context exposes it
-  const isOrganizer = organizerId && currentMongoId &&
+  const organizerId    = tournament?.organizer?._id ?? tournament?.organizer
+  const currentMongoId = currentUser?._id ?? currentUser?.mongoId
+  const isOrganizer    = organizerId && currentMongoId &&
     organizerId.toString() === currentMongoId.toString()
 
   const canManage = isOrganizer || isPrivileged
 
-  // Detect if current player already joined
   const currentPlayerId = String(currentPlayer?._id ?? "")
   const hasJoined = currentPlayerId
     ? tournament?.participants?.some((p) => {
@@ -1054,7 +1017,23 @@ export function TournamentCard({ tournament: initialTournament, onJoinSuccess })
     onJoinSuccess?.()
   }, [tournament._id, onJoinSuccess])
 
+  // FIX: guard player profile before opening any join dialog
+  const openJoin = () => {
+    if (!currentPlayer) {
+      toast.error("You need a player profile to join a tournament")
+      return
+    }
+    if (isPaid) setShowPaidJoin(true)
+    else        setShowJoin(true)
+  }
+
+  // FIX: require confirmation before deleting
   const handleDelete = async () => {
+    const confirmed = window.confirm(
+      `Delete "${tournament.name}"? This action cannot be undone.`
+    )
+    if (!confirmed) return
+
     setDeleteLoading(true)
     setShowOrgMenu(false)
     try {
@@ -1065,11 +1044,6 @@ export function TournamentCard({ tournament: initialTournament, onJoinSuccess })
       onJoinSuccess?.()
     } catch { toast.error("Something went wrong") }
     finally { setDeleteLoading(false) }
-  }
-
-  const openJoin = () => {
-    if (isPaid) setShowPaidJoin(true)
-    else        setShowJoin(true)
   }
 
   const menuItems = [
@@ -1116,12 +1090,11 @@ export function TournamentCard({ tournament: initialTournament, onJoinSuccess })
         className="relative w-full bg-[#0a0c10] border border-[#2a2e3a] rounded-xl font-['Rajdhani']"
         style={{ boxShadow: "0 0 30px rgba(255,107,0,0.04)" }}
       >
-        {/* Corner brackets */}
         {["top-0 left-0 border-t-2 border-l-2 rounded-tl-xl","top-0 right-0 border-t-2 border-r-2 rounded-tr-xl","bottom-0 left-0 border-b-2 border-l-2 rounded-bl-xl","bottom-0 right-0 border-b-2 border-r-2 rounded-br-xl"].map((cls, i) => (
           <div key={i} className={`pointer-events-none absolute z-10 w-3 h-3 ${cls} border-[#ff6b00]`} />
         ))}
 
-        {/* ── Header ──────────────────────────────────────── */}
+        {/* ── Header ── */}
         <div className="relative overflow-hidden px-5 pt-5 pb-4 bg-gradient-to-br from-[#0f1318] via-[#1a1f2e] to-[#0f1318] border-b border-[#1e2330] rounded-t-xl">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#ff6b00] to-transparent pointer-events-none" />
           <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full pointer-events-none"
@@ -1161,7 +1134,7 @@ export function TournamentCard({ tournament: initialTournament, onJoinSuccess })
           </div>
         </div>
 
-        {/* ── Stats row ───────────────────────────────────── */}
+        {/* ── Stats row ── */}
         <div className="grid grid-cols-3 border-b border-[#1e2330]">
           {[
             { label: "Players",  value: tournament?.totalPlayers ?? 0 },
@@ -1175,7 +1148,7 @@ export function TournamentCard({ tournament: initialTournament, onJoinSuccess })
           ))}
         </div>
 
-        {/* ── Progress bar ────────────────────────────────── */}
+        {/* ── Progress bar ── */}
         <div className="px-5 py-3 bg-[#0c0e14] border-b border-[#1e2330]">
           <div className="h-1.5 bg-[#1e2330] rounded-full overflow-hidden mb-1.5">
             <div className="h-full bg-gradient-to-r from-[#ff6b00] to-[#ffb300] rounded-full transition-all duration-500" style={{ width: `${fillPct}%` }} />
@@ -1186,7 +1159,7 @@ export function TournamentCard({ tournament: initialTournament, onJoinSuccess })
           </div>
         </div>
 
-        {/* ── Action buttons ───────────────────────────────── */}
+        {/* ── Action buttons ── */}
         <div className="flex gap-2.5 p-4 bg-[#0a0c10] rounded-b-xl">
           <button
             onClick={() => canJoin && openJoin()}
@@ -1229,7 +1202,7 @@ export function TournamentCard({ tournament: initialTournament, onJoinSuccess })
           </button>
         </div>
 
-        {/* ── Organizer dropdown menu ─────────────────────── */}
+        {/* ── Organizer dropdown menu ── */}
         {showOrgMenu && canManage && (
           <>
             <div className="fixed inset-0 z-[9998]" onClick={() => setShowOrgMenu(false)} />
@@ -1260,7 +1233,7 @@ export function TournamentCard({ tournament: initialTournament, onJoinSuccess })
         )}
       </div>
 
-      {/* ── Dialogs (portaled into body) ────────────────────── */}
+      {/* ── Dialogs ── */}
       <JoinDialog
         open={showJoin}
         onClose={() => setShowJoin(false)}
