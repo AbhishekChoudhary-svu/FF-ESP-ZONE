@@ -8,17 +8,17 @@ import { useRouter } from "next/navigation"
 import MyContext from "@/context/ThemeProvider"
 import { EditProfileForm } from "@/components/forms/EditProfile"
 
-import { GamingCard, DarkDialog, FONTS } from "../../shared/primitives"
-import { GuestBanner }            from "../../shared/GuestBanner"
+import { GamingCard, DarkDialog, FONTS } from "./shared/primitives"
+import { GuestBanner }            from "./shared/GuestBanner"
 import { UserProfileHeader }      from "./UserProfileHeader"
 import { UserProfileStats }       from "./UserProfileStats"
 
-import { EditPlayerDialog }       from "../../dialogs/EditPlayerDialog"
-import { EditTeamDialog }         from "../../dialogs/EditTeamDialog"
-import { ViewClipsDialog }        from "../../dialogs/ViewClipsDialog"
-import { ApplicationsDialog }     from "../../dialogs/ApplicationsDialog"
-import { TeamDetailsDialog }     from "../../dialogs/TeamDetailsDialog"
-import { TeamJoinRequestsDialog } from "../../dialogs/TeamJoinRequestsDialog"
+import { EditPlayerDialog }       from "./dialogs/EditPlayerDialog"
+import { EditTeamDialog }         from "./dialogs/EditTeamDialog"
+import { ViewClipsDialog }        from "./dialogs/ViewClipsDialog"
+import { ApplicationsDialog }     from "./dialogs/ApplicationsDialog"
+import { TeamDetailsDialog }     from "./dialogs/TeamDetailsDialog"
+import { TeamJoinRequestsDialog } from "./dialogs/TeamJoinRequestsDialog"
 
 /* ── Initial dialog-open state ─────────────────────────────── */
 const INITIAL_DIALOGS = {

@@ -1,4 +1,4 @@
-import { LandingPage } from "@/components/pages/landingPage";
+import { LandingPage } from "@/app/pages/landingPage";
 
 
 

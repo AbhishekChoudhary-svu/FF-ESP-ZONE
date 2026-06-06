@@ -1,4 +1,4 @@
-import { Chip, GhostBtn, LockedFeature } from "../../shared/primitives"
+import { Chip, GhostBtn, LockedFeature } from "./shared/primitives"
 
 export function UserProfileHeader({
   user,

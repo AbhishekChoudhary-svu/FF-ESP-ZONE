@@ -1,4 +1,4 @@
-import { StatCell } from "../../shared/primitives"
+import { StatCell } from "./shared/primitives"
 
 /**
  * @param {object}  props.user

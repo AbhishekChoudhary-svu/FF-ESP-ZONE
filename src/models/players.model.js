@@ -36,13 +36,16 @@ const playerSchema = new mongoose.Schema(
     },
 
   
-    stats: {
-      matchesPlayed: { type: Number, default: 0 },
-      kills: { type: Number, default: 0 },
-      deaths: { type: Number, default: 0 },
-      assists: { type: Number, default: 0 },
-      winRate: { type: Number, default: 0 },
-    },
+   // In players.model.js — update stats object:
+stats: {
+  matchesPlayed: { type: Number, default: 0 },
+  wins:          { type: Number, default: 0 },  // ← add this
+  kills:         { type: Number, default: 0 },
+  deaths:        { type: Number, default: 0 },
+  assists:       { type: Number, default: 0 },
+  winRate:       { type: Number, default: 0 },
+  totalPoints:   { type: Number, default: 0 },  // ← add this
+},
 
     // 🎬 Cloudinary clips
     clipPhotos: {
@@ -73,37 +76,21 @@ const playerSchema = new mongoose.Schema(
     },
 
    
-    tournamentHistory: [
-      {
-        tournamentName: {
-          type: String,
-          required: true,
-        },
-
-        matchesPlayed: {
-          type: Number,
-          default: 0,
-        },
-
-        wins: {
-          type: Number,
-          default: 0,
-        },
-
-        kills: {
-          type: Number,
-          default: 0,
-        },
-
-        placement: {
-          type: Number, 
-        },
-
-        date: {
-          type: Date,
-        },
-      },
-    ],
+  // Also update tournamentHistory entries:
+tournamentHistory: [
+  {
+    tournamentName: { type: String, required: true },
+    matchesPlayed:  { type: Number, default: 0 },
+    wins:           { type: Number, default: 0 },
+    kills:          { type: Number, default: 0 },
+    placement:      { type: Number },
+    points:         { type: Number, default: 0 },  // ← add this
+    prize:          { type: Number, default: 0 },  // ← add this
+    date:           { type: Date },
+  },
+],
+// models/players.model.js — add to schema
+upiId: { type: String, trim: true, default: "" },
 
     isActive: {
       type: Boolean,
