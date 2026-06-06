@@ -1,434 +1,827 @@
 "use client";
 
 import Link from "next/link";
-import ThemeToggleButton from "../../components/ui/theme-toggle-button";
 import { useContext, useEffect, useRef, useState } from "react";
 import MyContext from "@/context/ThemeProvider";
-import { Shield, ShieldCheck, Trophy, Users, Zap, Radio, ChevronRight, Crosshair, Target, Flame } from "lucide-react";
+import {
+  ShieldCheck,
+  Trophy,
+  Users,
+  Zap,
+  Radio,
+  ChevronRight,
+  Target,
+  Flame,
+  ArrowRight,
+} from "lucide-react";
 
-/* ── Animated counter hook ── */
-function useCounter(end, duration = 2000, start = false) {
-  const [count, setCount] = useState(0);
+/* ─── Fonts ─── */
+const FontLoader = () => (
+  <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@700;900&display=swap');`}</style>
+);
+
+/* ─── Animated counter ─── */
+function useCounter(end, duration = 1800, active = false) {
+  const [n, setN] = useState(0);
   useEffect(() => {
-    if (!start) return;
-    let startTime = null;
-    const step = (timestamp) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
-      setCount(Math.floor(progress * end));
-      if (progress < 1) requestAnimationFrame(step);
+    if (!active) return;
+    let t0 = null;
+    const tick = (ts) => {
+      if (!t0) t0 = ts;
+      const p = Math.min((ts - t0) / duration, 1);
+      setN(Math.floor((1 - Math.pow(1 - p, 3)) * end));
+      if (p < 1) requestAnimationFrame(tick);
     };
-    requestAnimationFrame(step);
-  }, [end, duration, start]);
-  return count;
+    requestAnimationFrame(tick);
+  }, [end, duration, active]);
+  return n;
 }
 
-/* ── Intersection observer hook ── */
-function useInView(threshold = 0.2) {
+/* ─── Intersection observer ─── */
+function useInView(threshold = 0.15) {
   const ref = useRef(null);
   const [inView, setInView] = useState(false);
   useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setInView(true); }, { threshold });
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) setInView(true);
+      },
+      { threshold },
+    );
     if (ref.current) obs.observe(ref.current);
     return () => obs.disconnect();
   }, [threshold]);
   return [ref, inView];
 }
 
-/* ── Stat counter component ── */
-function StatCounter({ value, suffix, label, delay = 0 }) {
-  const [ref, inView] = useInView(0.3);
-  const num = useCounter(value, 1800, inView);
+/* ─── Starburst SVG ─── */
+function Starburst({ size = 80, opacity = 0.15, className = "" }) {
+  const r = size / 2;
   return (
-    <div ref={ref} className="p-5 sm:p-6 border border-[#141822] bg-[#07080b]/50 rounded relative overflow-hidden group hover:border-[#ff6b00]/30 transition-all duration-300"
-      style={{ animationDelay: `${delay}ms` }}>
-      <div className="absolute inset-0 bg-gradient-to-br from-[#ff6b00]/0 to-[#ff6b00]/0 group-hover:from-[#ff6b00]/5 group-hover:to-transparent transition-all duration-500" />
-      <div className="mb-1 text-3xl sm:text-4xl font-black font-['Orbitron'] text-[#ff9a00] tracking-wider">
-        {inView ? num.toLocaleString() : "0"}{suffix}
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      className={`pointer-events-none absolute ${className}`}
+      aria-hidden
+    >
+      <g stroke="#ff6b00" strokeWidth="1" opacity={opacity} fill="none">
+        {Array.from({ length: 8 }, (_, i) => {
+          const a = (i * Math.PI) / 4;
+          return (
+            <line
+              key={i}
+              x1={r}
+              y1={r}
+              x2={r + Math.cos(a) * r}
+              y2={r + Math.sin(a) * r}
+            />
+          );
+        })}
+        <circle cx={r} cy={r} r={r * 0.1} />
+      </g>
+    </svg>
+  );
+}
+
+/* ─── Stat card ─── */
+function StatCard({ value, suffix = "", prefix = "", label, delay = 0 }) {
+  const [ref, inView] = useInView(0.3);
+  const n = useCounter(value, 1800, inView);
+  return (
+    <div
+      ref={ref}
+      className="relative px-10 py-12 border-r border-[#141822] last:border-r-0 overflow-hidden group"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#ff6b00] to-transparent" />
+      <div className="font-['Orbitron'] font-black text-[#ff9a00] text-5xl leading-none tracking-tight mb-3">
+        {prefix}
+        {inView ? n.toLocaleString() : "0"}
+        {suffix}
       </div>
-      <div className="text-[10px] sm:text-xs font-bold text-[#4e5d78] uppercase tracking-widest">{label}</div>
+      <div className="font-['Orbitron'] text-[9px] font-bold tracking-[.18em] uppercase text-[#4e5d78]">
+        {label}
+      </div>
     </div>
   );
 }
 
-/* ── Scanline overlay ── */
-function Scanlines() {
+/* ─── Tournament row ─── */
+function TRow({ name, format, prize, filled, total, status, hot }) {
+  const pct = Math.round((filled / total) * 100);
+
   return (
-    <div className="pointer-events-none absolute inset-0 z-0 opacity-[0.015]"
-      style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 4px)" }} />
+    <div className="grid grid-cols-[1fr_80px_80px] md:grid-cols-[1fr_100px_160px_90px] border-b border-[#141822] last:border-b-0 bg-[#07080b] hover:bg-[#0a0c10] transition-colors cursor-pointer group">
+      {/* name */}
+      <div className="px-3 md:px-5 py-4 flex flex-col gap-1 relative pl-6 md:pl-8 min-w-0">
+        {hot && (
+          <span className="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#ff6b00] animate-ping" />
+        )}
+
+        <span className="text-[11px] md:text-[13px] font-bold text-[#d0d5df] uppercase tracking-[.04em] truncate">
+          {name}
+        </span>
+
+        <span className="font-['Orbitron'] text-[8px] md:text-[9px] text-[#4e5d78] tracking-[.1em] truncate">
+          {format}
+        </span>
+      </div>
+
+      {/* prize */}
+      <div className="px-2 md:px-4 py-4 flex items-center font-['Orbitron'] font-black text-[11px] md:text-[13px] text-[#ffaa00]">
+        {prize}
+      </div>
+
+      {/* slots - desktop only */}
+      <div className="hidden md:flex px-4 py-4 flex-col justify-center gap-1.5">
+        <div className="h-[3px] bg-[#1e2330] overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-[#ff6b00] to-[#ffaa00] transition-all duration-700"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+
+        <span className="font-['Orbitron'] text-[9px] text-[#4e5d78]">
+          {filled}/{total}
+        </span>
+      </div>
+
+      {/* status */}
+      <div className="px-2 md:px-4 py-4 flex items-center justify-end">
+        <span
+          className={`font-['Orbitron'] text-[8px] md:text-[9px] font-bold tracking-[.15em] px-2 py-1 border ${
+            status === "open"
+              ? "bg-[#ff6b00]/10 text-[#ff6b00] border-[#ff6b00]/25"
+              : "bg-[#4ade80]/10 text-[#4ade80] border-[#4ade80]/20"
+          }`}
+        >
+          {status === "open" ? "OPEN" : "LIVE"}
+        </span>
+      </div>
+    </div>
   );
 }
 
-/* ── Floating particle ── */
-function Particle({ style }) {
-  return <div className="absolute w-0.5 h-0.5 bg-[#ff6b00]/40 rounded-full animate-ping" style={style} />;
+/* ─── Feature card ─── */
+function FeatCard({ icon, title, body, accent, index }) {
+  const [ref, inView] = useInView(0.1);
+  return (
+    <div
+      ref={ref}
+      className="relative bg-[#07080b] p-8 hover:bg-[#0a0c10] transition-all duration-300 group"
+      style={{
+        opacity: inView ? 1 : 0,
+        transform: inView ? "translateY(0)" : "translateY(28px)",
+        transition: `opacity .55s ease ${index * 90}ms, transform .55s ease ${index * 90}ms, background .2s`,
+      }}
+    >
+      {/* large bg number */}
+      <span className="absolute top-5 right-5 font-['Orbitron'] font-black text-[42px] text-[#0d0f15] leading-none select-none">
+        0{index + 1}
+      </span>
+      <div className="mb-5" style={{ color: accent }}>
+        {icon}
+      </div>
+      <h3 className="font-['Orbitron'] font-black text-[12px] uppercase tracking-[.05em] text-white mb-3">
+        {title}
+      </h3>
+      <p className="text-[12px] text-[#8090a0] leading-[1.7] font-semibold">
+        {body}
+      </p>
+      <div className="h-[2px] w-8 mt-5" style={{ background: accent }} />
+    </div>
+  );
 }
 
+/* ─── Clip-corner button ─── */
+const clipPath =
+  "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))";
+
+/* ════════════════════════════════════════
+   MAIN PAGE
+════════════════════════════════════════ */
 export function LandingPage() {
-  const context = useContext(MyContext);
-  const [navScrolled, setNavScrolled] = useState(false);
-  const [heroRef, heroInView] = useInView(0.1);
-  const [featRef, featInView] = useInView(0.1);
+  const ctx = useContext(MyContext);
+  const user = ctx?.user;
+  const [scrolled, setScrolled] = useState(false);
+  const [heroRef, heroInView] = useInView(0.05);
 
   useEffect(() => {
-    const onScroll = () => setNavScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const fn = () => setScrolled(window.scrollY > 50);
+    window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  const particles = [
-    { top: "15%", left: "8%",  animationDelay: "0s",    animationDuration: "2.1s" },
-    { top: "35%", left: "92%", animationDelay: "0.7s",  animationDuration: "3.3s" },
-    { top: "60%", left: "5%",  animationDelay: "1.4s",  animationDuration: "2.7s" },
-    { top: "75%", left: "88%", animationDelay: "0.3s",  animationDuration: "2.4s" },
-    { top: "50%", left: "50%", animationDelay: "1.8s",  animationDuration: "3.6s" },
-    { top: "20%", left: "72%", animationDelay: "0.9s",  animationDuration: "2.9s" },
+  /* data */
+  const tournaments = [
+    {
+      name: "TITAN CHAMPIONSHIP",
+      format: "BR · Squad",
+      prize: "₹50,000",
+      filled: 42,
+      total: 48,
+      status: "open",
+      hot: true,
+    },
+    {
+      name: "CORE SHOCK 4v4",
+      format: "CS · Squad",
+      prize: "₹15,000",
+      filled: 16,
+      total: 16,
+      status: "live",
+      hot: false,
+    },
+    {
+      name: "ALPHA SOLO GRID",
+      format: "BR · Solo",
+      prize: "₹8,000",
+      filled: 89,
+      total: 100,
+      status: "open",
+      hot: true,
+    },
+    {
+      name: "MIDNIGHT DUO BLITZ",
+      format: "BR · Duo",
+      prize: "₹20,000",
+      filled: 22,
+      total: 24,
+      status: "live",
+      hot: false,
+    },
+  ];
+
+  const features = [
+    {
+      icon: <Trophy size={22} />,
+      title: "Free Tournaments",
+      body: "Any captain can host open BR or CS brackets — zero entry cost, full competitive structure with auto-managed room IDs.",
+      accent: "#ff9a00",
+    },
+    {
+      icon: <Trophy size={22} />,
+      title: "Paid Arenas",
+      body: "High-stakes events with Razorpay checkout. Payment verified server-side before a slot is confirmed.",
+      accent: "#ffcc00",
+    },
+    {
+      icon: <Users size={22} />,
+      title: "Squad Recruitment",
+      body: "Browse players by KDA, role and region. Captains post openings — players apply in one tap.",
+      accent: "#ff6b00",
+    },
+    {
+      icon: <ShieldCheck size={22} />,
+      title: "Anti-Cheat Guard",
+      body: "Real-time UID verification and match telemetry keep every bracket clean and competition fair.",
+      accent: "#4ade80",
+    },
+    {
+      icon: <Radio size={22} />,
+      title: "Live Room Creds",
+      body: "Organizers publish Room ID and password directly to registered participants — hidden from everyone else.",
+      accent: "#63b3ed",
+    },
+    {
+      icon: <Zap size={22} />,
+      title: "Instant Results",
+      body: "Submit placements, kills and prizes post-match. Player stats update automatically across all leaderboards.",
+      accent: "#ff9a00",
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-[#07080b] text-[#d0d5df] font-['Rajdhani'] selection:bg-[#ff6b00]/30 selection:text-white relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#07080b] text-[#d0d5df] font-['Rajdhani'] overflow-x-hidden relative selection:bg-[#ff6b00]/30 selection:text-white">
+      <FontLoader />
 
-      <style>{`
-        @keyframes flicker { 0%,100%{opacity:1} 92%{opacity:1} 93%{opacity:0.8} 94%{opacity:1} 97%{opacity:0.9} 98%{opacity:1} }
-        @keyframes slideDown { from{transform:translateY(-20px);opacity:0} to{transform:translateY(0);opacity:1} }
-        @keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
-        @keyframes slideLeft { from{transform:translateX(40px);opacity:0} to{transform:translateX(0);opacity:1} }
-        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-        @keyframes glitch {
-          0%,100%{clip-path:inset(0 0 98% 0);transform:translateX(0)}
-          10%{clip-path:inset(10% 0 85% 0);transform:translateX(-4px)}
-          20%{clip-path:inset(40% 0 55% 0);transform:translateX(4px)}
-          30%{clip-path:inset(70% 0 20% 0);transform:translateX(-2px)}
-          40%{clip-path:inset(90% 0 5% 0);transform:translateX(0)}
-          50%{clip-path:inset(20% 0 70% 0);transform:translateX(3px)}
-          60%{clip-path:inset(60% 0 30% 0);transform:translateX(-3px)}
-          70%{clip-path:inset(80% 0 10% 0);transform:translateX(2px)}
-          80%{clip-path:inset(5% 0 90% 0);transform:translateX(-1px)}
-          90%{clip-path:inset(30% 0 65% 0);transform:translateX(1px)}
-        }
-        @keyframes borderPulse {
-          0%,100%{border-color:rgba(255,107,0,0.2)}
-          50%{border-color:rgba(255,107,0,0.6)}
-        }
-        @keyframes scanMove {
-          0%{transform:translateY(-100%)}
-          100%{transform:translateY(100vh)}
-        }
-        @keyframes hueShift {
-          0%,100%{filter:hue-rotate(0deg)}
-          50%{filter:hue-rotate(20deg)}
-        }
-        @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-
-        .hero-in { animation: slideUp 0.8s cubic-bezier(0.22,1,0.36,1) both; }
-        .hero-in-2 { animation: slideUp 0.8s cubic-bezier(0.22,1,0.36,1) 0.15s both; }
-        .hero-in-3 { animation: slideUp 0.8s cubic-bezier(0.22,1,0.36,1) 0.3s both; }
-        .hero-in-4 { animation: slideUp 0.8s cubic-bezier(0.22,1,0.36,1) 0.45s both; }
-
-        .glitch-text { position:relative; }
-        .glitch-text::before,.glitch-text::after {
-          content:attr(data-text); position:absolute; top:0; left:0; width:100%; height:100%;
-        }
-        .glitch-text::before { color:#ff6b00; animation:glitch 4s infinite linear; animation-delay:0.5s; }
-        .glitch-text::after  { color:#ffaa00; animation:glitch 4s infinite linear; animation-delay:1s; left:2px; }
-
-        .card-hover { transition: transform 0.25s cubic-bezier(0.22,1,0.36,1), border-color 0.25s, box-shadow 0.25s; }
-        .card-hover:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(255,107,0,0.12); }
-
-        .btn-glow:hover { box-shadow: 0 0 20px rgba(255,107,0,0.4), 0 0 40px rgba(255,107,0,0.15); }
-
-        .border-pulse { animation: borderPulse 2.5s ease-in-out infinite; }
-        .flicker { animation: flicker 8s infinite; }
-
-        .scan-line {
-          position:absolute; top:0; left:0; right:0; height:2px;
-          background:linear-gradient(90deg,transparent,rgba(255,107,0,0.15),transparent);
-          animation:scanMove 6s linear infinite;
-          pointer-events:none; z-index:1;
-        }
-
-        .marquee-inner { animation: marquee 20s linear infinite; }
-        .marquee-inner:hover { animation-play-state: paused; }
-
-        .feat-card {
-          opacity:0; transform:translateY(20px);
-          transition:opacity 0.5s ease, transform 0.5s ease;
-        }
-        .feat-card.visible { opacity:1; transform:translateY(0); }
-      `}</style>
+      {/* Grid overlay */}
+      <div
+        className="fixed inset-0 pointer-events-none z-0 opacity-100"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,107,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,107,0,0.025) 1px,transparent 1px)",
+          backgroundSize: "60px 60px",
+          maskImage:
+            "radial-gradient(ellipse 80% 80% at 50% 40%,#000 40%,transparent 100%)",
+        }}
+      />
 
       {/* Ambient glows */}
-      <div className="fixed top-0 left-1/4 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-[#ff6b00]/5 rounded-full blur-[100px] sm:blur-[120px] pointer-events-none z-0" />
-      <div className="fixed top-[50vh] right-0 w-[200px] sm:w-[400px] h-[200px] sm:h-[400px] bg-[#ffaa00]/3 rounded-full blur-[100px] sm:blur-[150px] pointer-events-none z-0" />
+      <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-[#ff6b00]/[0.05] rounded-full blur-[120px] pointer-events-none z-0" />
+      <div className="fixed top-1/2 right-0 w-[350px] h-[350px] bg-[#ffaa00]/[0.03] rounded-full blur-[120px] pointer-events-none z-0" />
 
-      {/* Particles */}
-      {particles.map((p, i) => <Particle key={i} style={p} />)}
-
-      {/* ── NAV ── */}
-      <nav className={`sticky top-0 z-50 border-b transition-all duration-300 ${navScrolled ? "border-[#1e2330] bg-[#07080b]/95 backdrop-blur-lg shadow-[0_4px_30px_rgba(0,0,0,0.5)]" : "border-[#141822] bg-[#07080b]/80 backdrop-blur-md"}`}>
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:py-4 sm:px-6 lg:px-8">
-          <div className="text-base sm:text-xl font-black font-['Orbitron'] tracking-wider bg-gradient-to-r from-[#ff6b00] to-[#ff9a00] bg-clip-text text-transparent flex items-center gap-2 flicker">
-            <span className="inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#ff6b00] animate-ping rounded-full shrink-0" />
-            FF-ESP-ZONE
+      {/* ══════════ NAV ══════════ */}
+      <nav
+        className={`sticky top-0 z-50 border-b transition-all duration-300 ${
+          scrolled
+            ? "border-[#1e2330] bg-[#07080b]/95 backdrop-blur-xl shadow-[0_4px_40px_rgba(0,0,0,0.6)]"
+            : "border-[#141822] bg-[#07080b]/80 backdrop-blur-md"
+        }`}
+      >
+        <div className="flex items-stretch max-w-7xl mx-auto">
+          {/* brand column — editorial left block */}
+          <div className="flex items-center gap-2.5 px-6 py-[15px] border-r border-[#141822] min-w-[210px]">
+            <span className="w-2 h-2 rounded-full bg-[#ff6b00] animate-ping flex-shrink-0" />
+            <span className="font-['Orbitron'] font-black text-[15px] tracking-[.08em] bg-gradient-to-r from-[#ff6b00] to-[#ffaa00] bg-clip-text text-transparent">
+              FF‑ESP‑ZONE
+            </span>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4">
-            <ThemeToggleButton variant="circle-blur" />
-            {context?.user ? (
-              <div className="flex items-center gap-2 sm:gap-3 bg-[#0a0c10] border border-[#1e2330] p-1.5 sm:pr-4 rounded">
-                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded bg-gradient-to-br from-[#ff6b00] to-[#ff9a00] text-white flex items-center justify-center font-['Orbitron'] text-xs sm:text-sm font-black shadow-[0_0_10px_rgba(255,107,0,0.2)]">
-                  {context.user.username.charAt(0).toUpperCase()}
+          {/* center links */}
+          <div className="hidden md:flex items-center flex-1 px-0">
+            {[ "Features", "Formats"].map((l) => (
+              <a
+                key={l}
+                href={`#${l.toLowerCase()}`}
+                className="flex items-center h-full px-5 font-['Orbitron'] text-[10px] font-bold tracking-[.12em] uppercase text-[#4e5d78] border-r border-[#0d0f15] hover:text-[#ff9a00] hover:bg-[#ff6b00]/[0.04] transition-colors"
+              >
+                {l}
+              </a>
+            ))}
+          </div>
+
+          {/* right auth */}
+          <div className="flex items-center border-l border-[#141822] ml-auto">
+            {user ? (
+              <div className="flex items-center gap-2.5 px-5 py-3">
+                <div className="w-8 h-8 rounded-[3px] bg-gradient-to-br from-[#ff6b00] to-[#ff9a00] flex items-center justify-center font-['Orbitron'] font-black text-[13px] text-white">
+                  {user.username?.charAt(0).toUpperCase()}
                 </div>
-                <div className="hidden sm:flex flex-col leading-tight min-w-0">
-                  <span className="text-xs font-bold text-white truncate max-w-[120px]">{context.user.username}</span>
-                  <span className="text-[10px] text-[#4e5d78] font-['Orbitron'] font-bold tracking-wider mt-0.5">UID: {context.user.ffUid}</span>
+                <div className="hidden sm:flex flex-col leading-tight">
+                  <span className="text-[12px] font-bold text-white">
+                    {user.username}
+                  </span>
+                  <span className="font-['Orbitron'] text-[9px] text-[#4e5d78]">
+                    UID: {user.ffUid}
+                  </span>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <Link href="/login" className="px-3 sm:px-4 py-1.5 bg-transparent border border-[#2a2e3a] text-[#8090a0] hover:text-white hover:bg-[#141822] hover:border-[#4e5d78] font-bold text-[10px] sm:text-xs uppercase tracking-wider rounded transition-all duration-150">
+              <>
+                <Link
+                  href="/login"
+                  className="flex items-center h-full px-5 font-['Orbitron'] text-[10px] font-bold tracking-[.1em] uppercase text-[#8090a0] border-r border-[#141822] hover:text-white hover:bg-[#0d0f15] transition-colors"
+                >
                   Login
                 </Link>
-                <Link href="/signup" className="px-3 sm:px-4 py-1.5 bg-gradient-to-r from-[#ff6b00] to-[#ff9a00] hover:from-[#ff7c1a] hover:to-[#ffa61a] text-white font-bold text-[10px] sm:text-xs uppercase tracking-wider rounded shadow-[0_2px_8px_rgba(255,107,0,0.2)] transition-all duration-150 btn-glow">
-                  Get Started
+                <Link
+                  href="/signup"
+                  className="flex items-center h-full px-5 font-['Orbitron'] text-[10px] font-bold tracking-[.1em] uppercase text-white bg-[#ff6b00] hover:bg-[#ff7c1a] transition-colors"
+                >
+                  Register
                 </Link>
-              </div>
+              </>
             )}
           </div>
         </div>
       </nav>
 
-      {/* ── HERO ── */}
-      <section ref={heroRef} className="relative flex min-h-[92vh] sm:min-h-[90vh] items-center justify-center overflow-hidden px-4 py-16">
-        <div className="scan-line" />
-        <Scanlines />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,107,0,0.08),transparent_50%)] pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-32 sm:h-40 bg-gradient-to-t from-[#07080b] to-transparent pointer-events-none" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#141822_1px,transparent_1px),linear-gradient(to_bottom,#141822_1px,transparent_1px)] bg-[size:3rem_3rem] sm:bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-30" />
-        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#ffaa00]/40 to-transparent" />
+      {/* ══════════ HERO ══════════ */}
+      <section
+        ref={heroRef}
+        className="relative min-h-[92vh] border-b border-[#141822] overflow-hidden"
+      >
+        {/* bg radial */}
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_55%_65%_at_15%_50%,rgba(255,107,0,0.07)_0%,transparent_60%)]" />
+        {/* right vertical accent */}
+        <div className="absolute top-0 right-0 w-[1px] h-full bg-gradient-to-b from-transparent via-[#ff6b00]/20 to-transparent" />
 
-        {/* Corner crosshair decorations — hidden on very small screens */}
-        {[
-          "top-6 left-6 sm:top-10 sm:left-10",
-          "top-6 right-6 sm:top-10 sm:right-10",
-          "bottom-6 left-6 sm:bottom-10 sm:left-10",
-          "bottom-6 right-6 sm:bottom-10 sm:right-10",
-        ].map((cls, i) => (
-          <div key={i} className={`absolute ${cls} opacity-20 hidden sm:block`}>
-            <Crosshair className="w-5 h-5 text-[#ff6b00]" />
-          </div>
-        ))}
+        {/* starbursts */}
+        <Starburst size={130} opacity={0.12} className="top-[10%] left-[2%]" />
+        <Starburst
+          size={70}
+          opacity={0.08}
+          className="bottom-[15%] left-[6%]"
+        />
+        <Starburst size={90} opacity={0.09} className="top-[8%] right-[4%]" />
+        <Starburst
+          size={55}
+          opacity={0.07}
+          className="bottom-[10%] right-[8%]"
+        />
 
-        <div className="relative z-10 mx-auto max-w-4xl text-center w-full">
-          <div className={`${heroInView ? "hero-in" : "opacity-0"}`}>
-            <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#ff6b00]/10 border border-[#ff6b00]/25 text-[#ff6b00] font-['Orbitron'] text-[10px] sm:text-xs font-bold tracking-widest uppercase rounded-sm mb-5 sm:mb-6">
-              <Zap className="w-3 h-3" />
-              NEXT-GEN ESPORTS INFRASTRUCTURE
-            </span>
-          </div>
-
-          <h1 className={`mb-5 sm:mb-6 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black font-['Orbitron'] tracking-tight text-white uppercase leading-[1.05] ${heroInView ? "hero-in-2" : "opacity-0"}`}>
-            Dominate the{" "}
-            <span
-              className="bg-gradient-to-r from-[#ff6b00] via-[#ff9a00] to-[#ffaa00] bg-clip-text text-transparent glitch-text"
-              data-text="Free Fire"
+        {/* two-column grid matching editorial reference */}
+        <div className="grid md:grid-cols-2 min-h-[92vh] max-w-7xl mx-auto relative z-10">
+          {/* LEFT — typography */}
+          <div className="flex flex-col justify-center px-8 md:px-11 py-20 border-r border-[#141822] relative">
+            {/* eyebrow */}
+            <div
+              className="flex items-center gap-3 font-['Orbitron'] text-[9px] font-bold tracking-[.2em] uppercase text-[#ff6b00] mb-7"
+              style={{
+                opacity: heroInView ? 1 : 0,
+                transform: heroInView ? "none" : "translateY(20px)",
+                transition: "opacity .7s .1s, transform .7s .1s",
+              }}
             >
-              Free Fire
-            </span>{" "}
-            <br className="hidden sm:block" />
-            Esports Arena
-          </h1>
+              <span className="w-8 h-px bg-[#ff6b00]/40 flex-shrink-0" />
+              Next-Gen Esports Platform
+            </div>
 
-          <p className={`mb-8 sm:mb-10 mx-auto max-w-2xl text-sm sm:text-base text-[#8090a0] font-medium tracking-wide leading-relaxed px-2 ${heroInView ? "hero-in-3" : "opacity-0"}`}>
-            Deploy open custom brackets, lock down top-tier tournament prize modules, and source competitive roster units based on historical data analytics.
-          </p>
+            {/* headline */}
+            <h1
+              className="font-['Orbitron'] font-black uppercase leading-[.92] tracking-[-0.01em] text-white mb-8"
+              style={{
+                fontSize: "clamp(52px,6vw,88px)",
+                opacity: heroInView ? 1 : 0,
+                transform: heroInView ? "none" : "translateY(24px)",
+                transition: "opacity .8s .2s, transform .8s .2s",
+              }}
+            >
+              WIN
+              <br />
+              <span className="text-[#ff6b00]">EVERY</span>
+              <br />
+              <span className="text-[#ffaa00]">BATTLE</span>
+            </h1>
 
-          <div className={`flex flex-col justify-center gap-3 sm:flex-row ${heroInView ? "hero-in-4" : "opacity-0"}`}>
-            {context?.user ? (
-              <Link href="/dashboard" className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-gradient-to-r from-[#ff6b00] to-[#ff9a00] hover:from-[#ff7c1a] hover:to-[#ffa61a] text-white font-['Orbitron'] font-bold text-xs sm:text-sm uppercase tracking-widest rounded shadow-[0_4px_15px_rgba(255,107,0,0.25)] transition-all duration-200 text-center btn-glow flex items-center justify-center gap-2">
-                Enter Command Dashboard <ChevronRight className="w-4 h-4" />
-              </Link>
-            ) : (
-              <>
-                <Link href="/signup" className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-gradient-to-r from-[#ff6b00] to-[#ff9a00] hover:from-[#ff7c1a] hover:to-[#ffa61a] text-white font-['Orbitron'] font-bold text-xs sm:text-sm uppercase tracking-widest rounded shadow-[0_4px_15px_rgba(255,107,0,0.25)] transition-all duration-200 text-center btn-glow flex items-center justify-center gap-2">
-                  Initialize Profile <ChevronRight className="w-4 h-4" />
+            {/* desc */}
+            <p
+              className="text-[14px] text-[#8090a0] font-semibold leading-[1.7] tracking-[.02em] max-w-[380px] mb-10"
+              style={{
+                opacity: heroInView ? 1 : 0,
+                transform: heroInView ? "none" : "translateY(20px)",
+                transition: "opacity .8s .35s, transform .8s .35s",
+              }}
+            >
+              The definitive Free Fire tournament platform. Host brackets, join
+              paid arenas, recruit squads — all in one tactical command center.
+            </p>
+
+            {/* CTAs */}
+            <div
+              className="flex flex-wrap gap-3 mb-14"
+              style={{
+                opacity: heroInView ? 1 : 0,
+                transform: heroInView ? "none" : "translateY(20px)",
+                transition: "opacity .8s .5s, transform .8s .5s",
+              }}
+            >
+              {user ? (
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#ff6b00] hover:bg-[#ff7c1a] text-white font-['Orbitron'] font-bold text-[11px] tracking-[.1em] uppercase transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(255,107,0,0.35)]"
+                  style={{ clipPath }}
+                >
+                  Enter Dashboard <ArrowRight size={13} />
                 </Link>
-                <Link href="/login" className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-transparent border border-[#2a2e3a] text-[#8090a0] hover:text-white hover:bg-[#141822] hover:border-[#4e5d78] font-['Orbitron'] font-bold text-xs sm:text-sm uppercase tracking-widest rounded transition-all duration-200 text-center">
-                  Access Grid
-                </Link>
-              </>
-            )}
+              ) : (
+                <>
+                  <Link
+                    href="/signup"
+                    className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#ff6b00] hover:bg-[#ff7c1a] text-white font-['Orbitron'] font-bold text-[11px] tracking-[.1em] uppercase transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(255,107,0,0.35)]"
+                    style={{ clipPath }}
+                  >
+                    Start Free <ArrowRight size={13} />
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center gap-2 px-7 py-3.5 bg-transparent border border-[#2a2e3a] text-[#8090a0] hover:text-white hover:bg-[#0d0f15] hover:border-[#4e5d78] font-['Orbitron'] font-bold text-[11px] tracking-[.1em] uppercase transition-all"
+                    style={{ clipPath }}
+                  >
+                    Sign In
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* live indicators */}
+            <div
+              className="flex flex-wrap gap-6"
+              style={{
+                opacity: heroInView ? 1 : 0,
+                transition: "opacity .8s .65s",
+              }}
+            >
+              {[
+                {
+                  color: "bg-[#ff6b00]",
+                  text: "text-[#ff6b00]",
+                  label: "247 Live",
+                  icon: <Radio size={10} />,
+                  ping: true,
+                },
+                {
+                  color: "bg-[#ffaa00]",
+                  text: "text-[#ffaa00]",
+                  label: "10K+ Players",
+                  icon: <Target size={10} />,
+                },
+                {
+                  color: "bg-[#4ade80]",
+                  text: "text-[#4ade80]",
+                  label: "₹1M+ Paid",
+                  icon: <Flame size={10} />,
+                },
+              ].map((ind) => (
+                <div
+                  key={ind.label}
+                  className={`flex items-center gap-1.5 font-['Orbitron'] text-[9px] font-bold tracking-[.1em] uppercase ${ind.text}`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${ind.color} ${ind.ping ? "animate-ping" : ""}`}
+                  />
+                  {ind.icon}
+                  {ind.label}
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Live indicators */}
-          <div className={`mt-10 sm:mt-14 flex flex-wrap items-center justify-center gap-4 sm:gap-8 ${heroInView ? "hero-in-4" : "opacity-0"}`}>
-            {[
-              { icon: <Radio className="w-3 h-3" />, text: "247 LIVE NOW", color: "text-[#ff6b00]", dot: "bg-[#ff6b00]" },
-              { icon: <Target className="w-3 h-3" />, text: "10K+ PLAYERS", color: "text-[#ffaa00]", dot: "bg-[#ffaa00]" },
-              { icon: <Flame className="w-3 h-3" />, text: "₹1M+ DISTRIBUTED", color: "text-[#4ade80]", dot: "bg-[#4ade80]" },
-            ].map((item, i) => (
-              <div key={i} className={`flex items-center gap-1.5 text-[10px] sm:text-[11px] font-['Orbitron'] font-bold ${item.color} opacity-80`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${item.dot} animate-pulse`} />
-                {item.icon}
-                {item.text}
+          {/* RIGHT — live bracket panel */}
+          <div className="flex flex-col bg-[#030406]">
+            {/* top metric */}
+            <div className="flex-1 px-12 pt-12 pb-8 border-b border-[#141822] relative flex flex-col justify-end">
+              {/* ghost large number */}
+              <span
+                className="absolute top-8 right-10 font-['Orbitron'] font-black text-[#141822] leading-none select-none"
+                style={{ fontSize: "clamp(64px,8vw,120px)" }}
+              >
+                48
+              </span>
+              <div className="font-['Orbitron'] text-[9px] font-bold tracking-[.2em] uppercase text-[#4e5d78] mb-2">
+                Active Tonight
               </div>
-            ))}
+              <div
+                className="font-['Orbitron'] font-black text-[#ff9a00] leading-none mb-1"
+                style={{ fontSize: "clamp(32px,4vw,48px)" }}
+              >
+                ₹1,35,000
+              </div>
+              <div className="font-['Orbitron'] text-[9px] text-[#4e5d78] tracking-[.15em] uppercase">
+                Total Prize Pool Live
+              </div>
+            </div>
+
+            {/* live brackets */}
+            <div className="px-12 py-10">
+              <div className="flex items-center gap-2 font-['Orbitron'] text-[9px] font-bold tracking-[.2em] uppercase text-[#4e5d78] mb-5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#ff6b00] animate-ping" />
+                Live Brackets
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {[
+                  {
+                    name: "Titan Championship",
+                    meta: "BR · Squad · 48 slots",
+                    prize: "₹50K",
+                  },
+                  {
+                    name: "Core Shock 4v4",
+                    meta: "CS · Squad · FULL",
+                    prize: "₹15K",
+                  },
+                  {
+                    name: "Alpha Solo Grid",
+                    meta: "BR · Solo · 100 slots",
+                    prize: "₹8K",
+                  },
+                ].map((b) => (
+                  <div
+                    key={b.name}
+                    className="flex items-center justify-between px-4 py-3 border border-[#1e2330] bg-[#07080b] hover:border-[#ff6b00]/40 transition-colors relative"
+                  >
+                    <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[#ff6b00]" />
+                    <div>
+                      <div className="text-[11px] font-bold text-[#d0d5df] uppercase tracking-[.04em]">
+                        {b.name}
+                      </div>
+                      <div className="font-['Orbitron'] text-[9px] text-[#4e5d78] mt-0.5">
+                        {b.meta}
+                      </div>
+                    </div>
+                    <div className="font-['Orbitron'] font-black text-[13px] text-[#ffaa00]">
+                      {b.prize}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── MARQUEE TICKER ── */}
-      <div className="border-y border-[#141822] bg-[#0a0c10] py-2.5 overflow-hidden">
-        <div className="marquee-inner flex gap-0 whitespace-nowrap" style={{ width: "200%" }}>
-          {[...Array(2)].map((_, ri) => (
-            <div key={ri} className="flex gap-6 sm:gap-10 px-3 sm:px-5" style={{ width: "50%" }}>
-              {["SQUAD TOURNAMENTS LIVE", "PRIZE POOLS UP TO ₹50K", "ANTI-CHEAT VERIFIED", "SOLO • DUO • SQUAD", "CLASH SQUAD 4v4", "REGISTER NOW", "BGMI ARENA LIVE"].map((t, i) => (
-                <span key={i} className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-['Orbitron'] font-bold uppercase tracking-widest text-[#4e5d78]">
-                  <span className="text-[#ff6b00]">◆</span> {t}
-                </span>
+     
+
+       {/* ══════════ TICKER ══════════ */}
+      <div className="border-t border-b border-[#141822] bg-[#030406] py-2.5 pt-10 overflow-hidden">
+        <div
+          className="flex"
+          style={{ width: "200%", animation: "ticker 28s linear infinite" }}
+        >
+          <style>{`@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}`}</style>
+          {[0, 1].map((ri) => (
+            <div key={ri} className="flex flex-1">
+              {[
+                "SQUAD TOURNAMENTS LIVE",
+                "PRIZE POOLS UP TO ₹50K",
+                "ANTI-CHEAT VERIFIED",
+                "SOLO · DUO · SQUAD",
+                "CLASH SQUAD 4v4",
+                "FREE REGISTRATION",
+                "RAZORPAY SECURED",
+                "REAL-TIME ROOM CREDS",
+              ].map((t, i) => (
+                <div
+                  key={i}
+                  className="inline-flex items-center gap-2.5 px-8 font-['Orbitron'] text-[9px] font-bold tracking-[.15em] uppercase text-[#4e5d78] border-r border-[#1e2330] whitespace-nowrap"
+                >
+                  <span className="text-[#ff6b00] text-[8px]">◆</span> {t}
+                </div>
               ))}
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── LIVE TOURNAMENT TABLE ── */}
-      <section className="px-4 py-12 sm:py-16 mx-auto max-w-6xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 border-b border-[#141822] pb-4 gap-3">
-          <div className="flex items-center gap-2">
-            <Radio className="text-[#ff6b00] h-4 w-4 animate-pulse shrink-0" />
-            <h2 className="text-base sm:text-xl font-bold font-['Orbitron'] tracking-wider text-white uppercase">Live Tournament Matrix</h2>
-          </div>
-          <span className="text-[10px] font-['Orbitron'] text-[#4e5d78] tracking-widest uppercase">Status: Synchronized // Live</span>
+      {/* ══════════ STATS ══════════ */}
+      <div className="border-t border-b pt-10 border-[#141822] bg-[#030406]">
+        <div className="grid grid-cols-1 md:grid-cols-3 max-w-7xl mx-auto px-6">
+          <StatCard
+            value={10000}
+            suffix="+"
+            label="Verified Active Players"
+            delay={0}
+          />
+          <StatCard
+            value={500}
+            suffix="+"
+            label="Monthly Brackets Deployed"
+            delay={150}
+          />
+          <StatCard
+            value={1}
+            prefix="₹"
+            suffix="M+"
+            label="Prize Pool Distributed"
+            delay={300}
+          />
         </div>
+      </div>
 
-        <div className="overflow-x-auto rounded border border-[#1e2330] bg-[#0a0c10] border-pulse">
-          <table className="w-full text-left border-collapse min-w-[480px]">
-            <thead>
-              <tr className="border-b border-[#141822] bg-[#07080b] text-[10px] sm:text-[11px] font-['Orbitron'] font-bold tracking-wider text-[#4e5d78] uppercase">
-                <th className="p-3 sm:p-4">Tournament</th>
-                <th className="p-3 sm:p-4 hidden sm:table-cell">Format</th>
-                <th className="p-3 sm:p-4">Prize</th>
-                <th className="p-3 sm:p-4 hidden xs:table-cell">Slots</th>
-                <th className="p-3 sm:p-4 text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody className="text-xs font-semibold">
-              {[
-                { title: "Titan Championship Cup", format: "Squad BR", prize: "₹50,000", slots: "42/48", status: "Registration Open", live: true },
-                { title: "Clash Squad Core Shock",  format: "4v4 CS",   prize: "₹15,000", slots: "16/16", status: "In Progress",       live: false },
-                { title: "Alpha Skirmish Arena",    format: "Solo BR",  prize: "₹5,000",  slots: "89/100",status: "Registration Open", live: true },
-              ].map((item, idx) => (
-                <tr key={idx} className="border-b border-[#141822]/60 hover:bg-[#141822]/30 transition-colors duration-150 group">
-                  <td className="p-3 sm:p-4">
-                    <span className="font-bold text-white uppercase tracking-wide text-[11px] sm:text-xs">{item.title}</span>
-                  </td>
-                  <td className="p-3 sm:p-4 text-[#8090a0] font-['Orbitron'] text-[10px] hidden sm:table-cell">{item.format}</td>
-                  <td className="p-3 sm:p-4 text-[#ffaa00] font-['Orbitron'] font-bold text-[11px] sm:text-xs">{item.prize}</td>
-                  <td className="p-3 sm:p-4 text-[#8090a0] text-[11px] hidden xs:table-cell">{item.slots}</td>
-                  <td className="p-3 sm:p-4 text-right">
-                    <span className={`inline-block px-1.5 sm:px-2 py-0.5 border text-[9px] sm:text-[10px] font-['Orbitron'] font-bold uppercase rounded-sm ${item.live ? "bg-[#ff6b00]/10 border-[#ff6b00]/30 text-[#ff6b00]" : "bg-[#ffaa00]/10 border-[#ffaa00]/30 text-[#ffaa00]"}`}>
-                      {item.live && <span className="inline-block w-1 h-1 bg-[#ff6b00] rounded-full mr-1 animate-pulse" />}
-                      {item.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* ── FEATURES ── */}
-      <section ref={featRef} className="bg-[#0a0c10] border-y border-[#141822] px-4 py-14 sm:py-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="text-center mb-10 sm:mb-16">
-            <div className="text-[10px] font-['Orbitron'] font-bold tracking-widest text-[#4e5d78] uppercase mb-3">SYSTEM MODULES</div>
-            <h2 className="text-2xl sm:text-3xl font-bold font-['Orbitron'] tracking-wider text-white uppercase">Operational Protocols</h2>
-            <div className="h-0.5 w-10 sm:w-12 bg-[#ff6b00] mx-auto mt-3" />
-          </div>
-
-          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { title: "Free Tournaments", description: "Deploy and compete within regional battle grounds with completely neutralized entry-ticket constraints.", icon: <Users className="h-5 w-5 text-[#ff6b00]" />, delay: 0 },
-              { title: "Paid Tournaments", description: "High-stakes high-yield parameters structured for verified profiles seeking locked prize allocations.", icon: <Trophy className="h-5 w-5 text-[#ffaa00]" />, delay: 100 },
-              { title: "Team Recruitment", description: "Incorporate targeted search functions to filter prospective squads by position and tactical KDA indices.", icon: <Zap className="h-5 w-5 text-[#ff6b00]" />, delay: 200 },
-              { title: "Anti-Cheat Guard", description: "Real-time verification handshakes paired with dynamic coordinate telemetry tracking infrastructure.", icon: <ShieldCheck className="h-5 w-5 text-emerald-500" />, delay: 300 },
-            ].map((feature, i) => (
-              <div
-                key={feature.title}
-                className={`feat-card card-hover rounded-lg border border-[#1e2330] bg-[#07080b] p-5 sm:p-6 hover:border-[#ff6b00]/30 group shadow-[0_4px_12px_rgba(0,0,0,0.2)] ${featInView ? "visible" : ""}`}
-                style={{ transitionDelay: `${feature.delay}ms` }}
-              >
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                  <div className="text-[9px] sm:text-[10px] font-['Orbitron'] font-bold tracking-widest text-[#4e5d78] uppercase">PROTOCOL // MODULE</div>
-                  <div className="p-1.5 bg-[#141822] rounded border border-[#1e2330] group-hover:border-[#ff6b00]/20 transition-colors">{feature.icon}</div>
-                </div>
-                <h3 className="mb-2 sm:mb-3 text-base sm:text-lg font-['Orbitron'] font-bold text-white group-hover:text-[#ff9a00] transition-colors uppercase">{feature.title}</h3>
-                <p className="text-xs text-[#8090a0] leading-relaxed font-semibold">{feature.description}</p>
-                <div className="mt-3 sm:mt-4 flex items-center gap-1 text-[10px] font-['Orbitron'] font-bold text-[#ff6b00] opacity-0 group-hover:opacity-100 transition-opacity">
-                  LEARN MORE <ChevronRight className="w-3 h-3" />
-                </div>
+      {/* ══════════ FEATURES ══════════ */}
+      <section
+        className="py-20 bg-[#030406] border-b border-[#141822] relative z-10"
+        id="features"
+      >
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-end justify-between mb-12 pb-5 border-b border-[#141822]">
+            <div>
+              <div className="font-['Orbitron'] text-[9px] font-bold tracking-[.2em] uppercase text-[#ff6b00] mb-2">
+                Platform Modules
               </div>
+              <h2 className="font-['Orbitron'] font-black uppercase text-white text-[clamp(22px,3vw,36px)] tracking-tight">
+                What You Get
+              </h2>
+            </div>
+          </div>
+
+          {/* 3×2 grid separated by 1px #141822 lines */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-[#141822] border border-[#141822]">
+            {features.map((f, i) => (
+              <FeatCard key={i} {...f} index={i} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── FORMATS + PRIZE SPLIT ── */}
-      <section className="px-4 py-14 sm:py-20 bg-[#07080b]">
-        <div className="mx-auto max-w-6xl">
-          <div className="grid gap-4 sm:gap-8 grid-cols-1 md:grid-cols-3">
-            {/* Formats */}
-            <div className="md:col-span-2 rounded-lg border bg-[#0a0c10] border-[#1e2330] p-5 sm:p-6 flex flex-col justify-between card-hover">
-              <div>
-                <div className="text-[10px] font-['Orbitron'] font-bold tracking-widest text-[#4e5d78] uppercase mb-2">CONFIGURATION SYSTEM</div>
-                <h3 className="mb-3 sm:mb-4 text-lg sm:text-xl font-['Orbitron'] font-bold text-white tracking-wide uppercase">Supported Combat Configurations</h3>
-                <p className="text-xs text-[#8090a0] mb-5 sm:mb-6 font-semibold">Deploy matches across multiple standard configurations natively linked to automatic custom room handlers.</p>
-              </div>
-              <div className="space-y-4">
-                {[
-                  { label: "BATTLE ROYALE (BR)", modes: ["Solo Matrix", "Duo Sync", "Squad Deployment"], color: "bg-[#ff6b00]/5 border-[#ff6b00]/20 text-[#ff6b00]" },
-                  { label: "CLASH SQUAD (CS)",   modes: ["1v1 Terminal","2v2 Skirmish","4v4 Core Shock"],  color: "bg-[#ffaa00]/5 border-[#ffaa00]/20 text-[#ffaa00]" },
-                ].map((group) => (
-                  <div key={group.label}>
-                    <div className="text-[10px] sm:text-[11px] font-['Orbitron'] font-bold text-white mb-2 tracking-wider">{group.label}</div>
-                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                      {group.modes.map((mode) => (
-                        <span key={mode} className={`rounded-sm px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-['Orbitron'] font-bold border uppercase tracking-wider ${group.color}`}>{mode}</span>
-                      ))}
-                    </div>
+      {/* ══════════ FORMATS ══════════ */}
+      <section className="py-20 relative z-10" id="formats">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="mb-12 pb-5 border-b border-[#141822]">
+            <div className="font-['Orbitron'] text-[9px] font-bold tracking-[.2em] uppercase text-[#ff6b00] mb-2">
+              Game Modes
+            </div>
+            <h2 className="font-['Orbitron'] font-black uppercase text-white text-[clamp(22px,3vw,36px)] tracking-tight">
+              Combat Configurations
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* left — BR + CS blocks */}
+            <div className="flex flex-col gap-6">
+              {[
+                {
+                  label: "Mode 01 — Battle Royale",
+                  title: "Battle Royale",
+                  desc: "Drop in, survive, dominate. Auto-calculated slots — 48 solo, 24 duo, 12 squad per bracket.",
+                  tags: [
+                    ["Solo · 48 Players", "br"],
+                    ["Duo · 48 Players", "br"],
+                    ["Squad · 48 Players", "br"],
+                  ],
+                },
+                {
+                  label: "Mode 02 — Clash Squad",
+                  title: "Clash Squad",
+                  desc: "Intense 4v4 format. Two squads, eight players, one winner. Custom room auto-manages the bracket.",
+                  tags: [
+                    ["4v4 · 8 Players", "cs"],
+                    ["Squad Only", "cs"],
+                  ],
+                },
+              ].map((block) => (
+                <div
+                  key={block.title}
+                  className="border border-[#1e2330] p-12 bg-[#07080b]"
+                >
+                  <div className="font-['Orbitron'] text-[9px] font-bold tracking-[.2em] uppercase text-[#ff6b00] mb-3">
+                    {block.label}
                   </div>
-                ))}
-              </div>
+                  <h3 className="font-['Orbitron'] font-black uppercase text-white text-[22px] mb-2 tracking-[.02em]">
+                    {block.title}
+                  </h3>
+                  <p className="text-[12px] text-[#8090a0] font-semibold leading-[1.6] mb-6">
+                    {block.desc}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {block.tags.map(([t, type]) => (
+                      <span
+                        key={t}
+                        className={`font-['Orbitron'] text-[9px] font-bold tracking-[.12em] uppercase px-3 py-1.5 border ${
+                          type === "br"
+                            ? "border-[#ff6b00]/30 text-[#ff8c30] bg-[#ff6b00]/[0.06]"
+                            : "border-[#ffaa00]/30 text-[#ffaa00] bg-[#ffaa00]/[0.06]"
+                        }`}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {/* Prize */}
-            <div className="rounded-lg border bg-[#0a0c10] border-[#1e2330] p-5 sm:p-6 flex flex-col justify-between card-hover">
-              <div>
-                <div className="text-[10px] font-['Orbitron'] font-bold tracking-widest text-[#4e5d78] uppercase mb-2">ALLOCATION ALGORITHM</div>
-                <h3 className="mb-3 sm:mb-4 text-lg sm:text-xl font-['Orbitron'] font-bold text-white tracking-wide uppercase">Prize Pools</h3>
-                <p className="text-xs text-[#8090a0] mb-4 font-semibold">Decentralized liquidity scaling criteria for standard battle units:</p>
+            {/* right — prize block */}
+            <div className="border border-[#1e2330] p-8 bg-[#030406] flex flex-col">
+              <div className="font-['Orbitron'] text-[9px] font-bold tracking-[.2em] uppercase text-[#ff6b00] mb-3">
+                Prize Structure
               </div>
-              <div className="space-y-3 border-t border-[#141822]/60 pt-4 text-xs font-semibold uppercase tracking-wider">
+              <h3 className="font-['Orbitron'] font-black uppercase text-white text-[22px] mb-2 tracking-[.02em]">
+                Payout Matrix
+              </h3>
+              <p className="text-[12px] text-[#8090a0] font-semibold leading-[1.6] mb-8">
+                Standard prize distribution for all brackets:
+              </p>
+
+              <div className="flex-1 flex flex-col justify-center gap-0 divide-y divide-[#0d0f15]">
                 {[
-                  { rank: "Champion Bracket", share: "50% Share", color: "text-[#ff9a00]", bar: "w-full", barColor: "bg-[#ff9a00]" },
-                  { rank: "Runner-Up Unit",   share: "30% Share", color: "text-white",     bar: "w-3/5",  barColor: "bg-[#ff6b00]" },
-                  { rank: "Third Place",      share: "20% Share", color: "text-[#8090a0]", bar: "w-2/5",  barColor: "bg-[#4e5d78]" },
-                ].map((item) => (
-                  <div key={item.rank}>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[#8090a0]">{item.rank}</span>
-                      <span className={`font-['Orbitron'] font-bold ${item.color}`}>{item.share}</span>
+                  {
+                    rank: "1st — Champion",
+                    pct: "50%",
+                    w: "100%",
+                    color: "text-[#ffaa00]",
+                  },
+                  {
+                    rank: "2nd — Runner Up",
+                    pct: "30%",
+                    w: "60%",
+                    color: "text-[#d0d5df]",
+                  },
+                  {
+                    rank: "3rd — Third",
+                    pct: "20%",
+                    w: "40%",
+                    color: "text-[#8090a0]",
+                  },
+                ].map((p) => (
+                  <div key={p.rank} className="flex items-center gap-4 py-4">
+                    <div className="text-[12px] font-bold text-[#4e5d78] uppercase tracking-[.04em] w-36 flex-shrink-0">
+                      {p.rank}
                     </div>
-                    <div className="h-0.5 bg-[#141822] rounded-full overflow-hidden">
-                      <div className={`h-full ${item.bar} ${item.barColor} rounded-full opacity-60`} />
+                    <div className="flex-1 h-[2px] bg-[#1e2330]">
+                      <div
+                        className="h-full bg-[#ff6b00]"
+                        style={{ width: p.w }}
+                      />
+                    </div>
+                    <div
+                      className={`font-['Orbitron'] font-black text-[18px] flex-shrink-0 ${p.color}`}
+                    >
+                      {p.pct}
                     </div>
                   </div>
                 ))}
-                <div className="pt-2 border-t border-[#141822]/40 flex justify-between items-center text-[10px] text-[#4e5d78]">
-                  <span>KDA Multiplier</span>
-                  <span>Active Token</span>
+              </div>
+
+              {/* entry fee chips */}
+              <div className="grid grid-cols-2 gap-3 mt-8 pt-6 border-t border-[#141822]">
+                <div className="p-4 bg-[#07080b] border border-[#1e2330]">
+                  <div className="font-['Orbitron'] text-[9px] text-[#4e5d78] tracking-[.15em] uppercase mb-1.5">
+                    Free Entry
+                  </div>
+                  <div className="font-['Orbitron'] font-black text-[22px] text-[#4ade80]">
+                    ₹0
+                  </div>
+                </div>
+                <div className="p-4 bg-[#07080b] border border-[#ff6b00]/20">
+                  <div className="font-['Orbitron'] text-[9px] text-[#4e5d78] tracking-[.15em] uppercase mb-1.5">
+                    Paid — Up To
+                  </div>
+                  <div className="font-['Orbitron'] font-black text-[22px] text-[#ffaa00]">
+                    ₹50K
+                  </div>
                 </div>
               </div>
             </div>
@@ -436,71 +829,116 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── STATS ── */}
-      <section className="bg-[#0a0c10] border-y border-[#141822] px-4 py-12 sm:py-16">
-        <div className="mx-auto max-w-6xl">
-          <div className="grid gap-3 sm:gap-8 grid-cols-3">
-            <StatCounter value={10000} suffix="+" label="Verified Active Players" delay={0} />
-            <StatCounter value={500}   suffix="+" label="Monthly Brackets Deployed" delay={150} />
-            <StatCounter value={1}     suffix="M+" label="Prize Pool Distributed ₹" delay={300} />
-          </div>
-        </div>
-      </section>
+      {/* ══════════ CTA ══════════ */}
+      <section className="py-28 relative overflow-hidden border-t border-b border-[#141822]">
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_50%_80%_at_50%_50%,rgba(255,107,0,0.05)_0%,transparent_70%)]" />
+        <Starburst
+          size={220}
+          opacity={0.06}
+          className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+        />
 
-      {/* ── CTA ── */}
-      <section className="px-4 py-16 sm:py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,107,0,0.05),transparent_60%)] pointer-events-none" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#141822_1px,transparent_1px),linear-gradient(to_bottom,#141822_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_60%,transparent_100%)] opacity-20" />
-
-        <div className="mx-auto max-w-2xl text-center relative z-10 px-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#ff6b00]/10 border border-[#ff6b00]/20 text-[#ff6b00] font-['Orbitron'] text-[10px] font-bold tracking-widest uppercase rounded-sm mb-5 sm:mb-6">
-            <Flame className="w-3 h-3" /> INITIALIZE SEQUENCE
+        <div className="max-w-[600px] mx-auto px-6 text-center relative z-10">
+          <div className="font-['Orbitron'] text-[9px] font-bold tracking-[.2em] uppercase text-[#ff6b00] mb-5">
+            Initialize Sequence
           </div>
-          <h2 className="mb-4 text-2xl sm:text-3xl font-bold font-['Orbitron'] text-white uppercase tracking-wider leading-tight">
-            Ready to Initialize<br className="hidden sm:block" /> Registration?
+          <h2
+            className="font-['Orbitron'] font-black uppercase text-white leading-[.92] tracking-[-0.01em] mb-5"
+            style={{ fontSize: "clamp(36px,5vw,64px)" }}
+          >
+            Ready to
+            <br />
+            <span className="text-[#ff6b00]">Compete?</span>
           </h2>
-          <p className="mb-7 sm:mb-8 text-xs sm:text-sm text-[#8090a0] font-semibold max-w-md mx-auto leading-relaxed uppercase tracking-wide">
-            Integrate your terminal credentials with thousands of regional teams active over live network interfaces.
+          <p className="text-[13px] text-[#8090a0] font-semibold leading-[1.7] tracking-[.02em] mb-10 max-w-[440px] mx-auto">
+            Join thousands of Free Fire players competing in verified,
+            anti-cheat tournaments. Free to enter, free to host — paid arenas
+            with real prize pools.
           </p>
-
-          <div className="flex flex-col justify-center gap-3 sm:flex-row max-w-xs sm:max-w-sm mx-auto">
-            <Link href="/signup" className="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-[#ff6b00] to-[#ff9a00] hover:from-[#ff7c1a] hover:to-[#ffa61a] text-white font-['Orbitron'] font-bold text-xs uppercase tracking-widest rounded transition-all duration-150 shadow-[0_4px_12px_rgba(255,107,0,0.2)] text-center btn-glow flex items-center justify-center gap-1.5">
-              Sign Up Now <ChevronRight className="w-3.5 h-3.5" />
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#ff6b00] hover:bg-[#ff7c1a] text-white font-['Orbitron'] font-bold text-[11px] tracking-[.1em] uppercase transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(255,107,0,0.35)]"
+              style={{ clipPath }}
+            >
+              Create Account <ArrowRight size={13} />
             </Link>
-            <button type="button" className="flex-1 py-2.5 sm:py-3 bg-transparent border border-[#2a2e3a] text-[#8090a0] hover:text-white hover:bg-[#141822] hover:border-[#4e5d78] font-['Orbitron'] font-bold text-xs uppercase tracking-widest rounded transition-all duration-150 text-center cursor-pointer">
-              System Summary
-            </button>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 px-8 py-3.5 border border-[#2a2e3a] text-[#8090a0] hover:text-white hover:bg-[#0d0f15] hover:border-[#4e5d78] font-['Orbitron'] font-bold text-[11px] tracking-[.1em] uppercase transition-all"
+              style={{ clipPath }}
+            >
+              View Live Arenas
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer className="border-t border-[#141822] bg-[#030406] px-4 py-10 sm:py-12 text-[#8090a0]">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-8 sm:mb-10 grid gap-6 sm:gap-8 grid-cols-2 md:grid-cols-4">
+      {/* ══════════ FOOTER ══════════ */}
+      <footer className="bg-[#030406] border-t border-[#141822] pt-16 pb-8">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-14">
             <div className="col-span-2 md:col-span-1">
-              <div className="mb-2 sm:mb-3 font-['Orbitron'] font-black text-white tracking-wider text-sm">FF-ESP-ZONE</div>
-              <p className="text-xs text-[#4e5d78] font-semibold uppercase leading-relaxed tracking-wide">
-                The absolute standard for decentralized custom Free Fire competition modules.
+              <div className="font-['Orbitron'] font-black text-[16px] text-white tracking-[.08em] mb-3">
+                FF‑ESP‑ZONE
+              </div>
+              <p className="text-[11px] text-[#4e5d78] font-semibold uppercase leading-[1.7] tracking-[.04em]">
+                The definitive platform for Free Fire tournament management.
+                Compete, host, recruit.
               </p>
             </div>
             {[
-              { title: "Product Core", links: ["Tournaments", "Recruitment", "Chat Grid"] },
-              { title: "Network",      links: ["About Hub", "System Blog", "Contact Vector"] },
-              { title: "Regulatory",   links: ["Privacy Clause", "Terms Instance", "System Rules"] },
+              {
+                title: "Platform",
+                links: [
+                  "Tournaments",
+                  "Recruitment",
+                  "World Chat",
+                  "Dashboard",
+                ],
+              },
+              {
+                title: "Company",
+                links: ["About Us", "Blog", "Contact", "Press Kit"],
+              },
+              {
+                title: "Legal",
+                links: [
+                  "Privacy Policy",
+                  "Terms of Use",
+                  "Game Rules",
+                  "Refund Policy",
+                ],
+              },
             ].map((col) => (
               <div key={col.title}>
-                <h4 className="mb-3 sm:mb-4 text-[10px] sm:text-xs font-bold text-white uppercase tracking-widest">{col.title}</h4>
-                <ul className="space-y-1.5 sm:space-y-2 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
-                  {col.links.map((link) => (
-                    <li key={link}><a href="#" className="text-[#4e5d78] hover:text-[#ff9a00] transition-colors">{link}</a></li>
+                <div className="font-['Orbitron'] text-[9px] font-bold tracking-[.2em] uppercase text-[#8090a0] mb-4">
+                  {col.title}
+                </div>
+                <ul className="flex flex-col gap-2.5">
+                  {col.links.map((l) => (
+                    <li key={l}>
+                      <a
+                        href="#"
+                        className="text-[11px] text-[#4e5d78] font-bold uppercase tracking-[.05em] hover:text-[#ff9a00] transition-colors"
+                      >
+                        {l}
+                      </a>
+                    </li>
                   ))}
                 </ul>
               </div>
             ))}
           </div>
-          <div className="border-t border-[#141822]/60 pt-5 sm:pt-6 text-center text-[10px] font-bold uppercase tracking-widest text-[#4e5d78]">
-            © 2026 FF-ESP-ZONE. Free Fire is a trademark of Garena. All internal interfaces compiled over decentralized server grids.
+
+          <div className="flex items-center justify-between pt-6 border-t border-[#141822]">
+            <div className="font-['Orbitron'] text-[9px] text-[#2a2e3a] tracking-[.12em] uppercase">
+              © 2026 FF‑ESP‑ZONE · Free Fire™ is a trademark of Garena
+            </div>
+            <div className="flex items-center gap-2 font-['Orbitron'] text-[9px] text-[#2a2e3a] tracking-[.1em] uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ff6b00]" />
+              Systems Operational
+            </div>
           </div>
         </div>
       </footer>

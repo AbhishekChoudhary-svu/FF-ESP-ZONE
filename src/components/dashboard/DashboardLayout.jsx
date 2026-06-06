@@ -75,11 +75,19 @@ useEffect(() => {
           before:content-[''] before:absolute before:bottom-0 before:left-0 before:right-0
           before:h-[1px] before:bg-gradient-to-r before:from-transparent before:via-[#ff6b00]/40 before:to-transparent">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
-            <Link href="/">
-              <h1 className="font-['Orbitron'] text-xl font-black bg-gradient-to-r from-[#ff6b00] via-[#ff9a00] to-[#ffcc00] bg-clip-text text-transparent tracking-wider [filter:drop-shadow(0_0_10px_rgba(255,107,0,0.2))]">
+           
+              {/* <h1 className="font-['Orbitron'] text-xl font-black bg-gradient-to-r from-[#ff6b00] via-[#ff9a00] to-[#ffcc00] bg-clip-text text-transparent tracking-wider [filter:drop-shadow(0_0_10px_rgba(255,107,0,0.2))]">
                 FF-ESP-ZONE
-              </h1>
+              </h1> */}
+           
+            <div className="flex items-center gap-2.5 border-r border-[#141822] min-w-[210px]">
+            <span className="w-2 h-2 rounded-full bg-[#ff6b00] animate-ping flex-shrink-0" />
+             <Link href="/">
+            <span className="font-['Orbitron'] font-black text-[15px] tracking-[.08em] bg-gradient-to-r from-[#ff6b00] to-[#ffaa00] bg-clip-text text-transparent">
+              FF‑ESP‑ZONE
+            </span>
             </Link>
+          </div>
             <button
               onClick={handleLogout}
               className="px-4 py-1.5 rounded bg-transparent border border-[#2a2e3a] text-[#8090a0] text-xs font-bold tracking-wider uppercase cursor-pointer hover:border-[#ff6b00]/40 hover:text-[#ff8c30] hover:bg-[#ff6b00]/5 active:scale-95 transition-all duration-200"
