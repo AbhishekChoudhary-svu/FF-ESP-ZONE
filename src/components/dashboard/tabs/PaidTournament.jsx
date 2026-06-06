@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useContext } from "react"
 import { CreateTournamentForm } from "@/components/forms/CreateTournament"
-import { TournamentCard } from "../tournament-card/Tournamentcard"
+import { TournamentCard } from "../tournament-card/TournamentCard"
 import MyContext from "@/context/ThemeProvider"
 import { Loader2, X } from "lucide-react"
 
