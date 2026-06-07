@@ -35,7 +35,7 @@ export function UserProfileHeader({
         <div className="grid grid-cols-2 gap-2.5 flex-shrink-0">
           <ActionButtons
             isGuest={isGuest} hasPlayer={hasPlayer} hasTeam={hasTeam}
-            hasCaptain={hasCaptain} team={team} openDialog={openDialog}
+            hasCaptain={hasCaptain} user={user} team={team} openDialog={openDialog}
           />
         </div>
       </div>
@@ -53,7 +53,7 @@ export function UserProfileHeader({
         <div className="grid grid-cols-3 gap-1.5">
           <ActionButtons
             isGuest={isGuest} hasPlayer={hasPlayer} hasTeam={hasTeam}
-            hasCaptain={hasCaptain} team={team} openDialog={openDialog}
+            hasCaptain={hasCaptain} user={user} team={team} openDialog={openDialog}
             mobile
           />
         </div>
@@ -124,13 +124,11 @@ function NameBlock({ user, player, isGuest, mobile = false }) {
 }
 
 /* ── Action buttons ────────────────────────────────────────── */
-function ActionButtons({ isGuest, hasPlayer, hasTeam, hasCaptain, team, openDialog, mobile = false }) {
-  // On mobile: ultra-compact — icon emoji + short label, tiny text
+function ActionButtons({ isGuest, hasPlayer, hasTeam, hasCaptain, team, openDialog, user, mobile = false }) {
   const cls = mobile
     ? "w-full text-[9px] px-1.5 py-1.5 leading-tight text-center"
     : ""
 
-  // Short labels for mobile to fit 3 columns
   const label = mobile
     ? {
         editProfile:  "✏ Profile",
@@ -139,6 +137,7 @@ function ActionButtons({ isGuest, hasPlayer, hasTeam, hasCaptain, team, openDial
         editTeam:     hasTeam ? "🛡 Edit Team" : "🛡 Create",
         teamDetails:  "🛡 Details",
         applications: "📋 Request",
+        admin:        "⚙ Admin",        // ← short label
       }
     : {
         editProfile:  "✏ Edit Profile",
@@ -147,7 +146,10 @@ function ActionButtons({ isGuest, hasPlayer, hasTeam, hasCaptain, team, openDial
         editTeam:     hasTeam ? "🛡 Edit Team" : "🛡 Create Team",
         teamDetails:  "🛡 Team Details",
         applications: "📋 Applications",
+        admin:        "⚙ Admin Panel",  // ← full label
       }
+
+  const isAdmin = user?.role === "admin"
 
   return (
     <>
@@ -188,9 +190,20 @@ function ActionButtons({ isGuest, hasPlayer, hasTeam, hasCaptain, team, openDial
           {label.applications}
         </GhostBtn>
       </LockedFeature>
+
+      {/* ── Admin-only button ── */}
+      {isAdmin && (
+        <GhostBtn
+          onClick={() => (window.location.href = "/admin")}
+          className={`${cls}`}
+        >
+          {label.admin}
+        </GhostBtn>
+      )}
     </>
   )
 }
+
 
 /* ── Avatar block ──────────────────────────────────────────── */
 function AvatarBlock({ user, player, isGuest, size = "lg" }) {

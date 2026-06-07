@@ -1,74 +1,86 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Trophy, Plus, Search, Filter, ArrowUpDown, Settings, Trash2 } from "lucide-react"
+import { Trophy, Search, Filter, ArrowUpDown, Settings, Trash2, Loader2 } from "lucide-react"
+import toast from "react-hot-toast"
 
-export function TournamentManagementTab() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterStatus, setFilterStatus] = useState("all")
-  const [sortBy, setSortBy] = useState("newest")
+const STATUS_STYLE = {
+  draft:     "bg-[#ff9a00]/5 border-[#ff9a00]/20 text-[#ff9a00]",
+  upcoming:  "bg-blue-500/5 border-blue-500/20 text-blue-400",
+  ongoing:   "bg-green-500/5 border-green-500/20 text-green-400",
+  completed: "bg-muted-foreground/5 border-muted-foreground/20 text-muted-foreground",
+  cancelled: "bg-destructive/5 border-destructive/20 text-destructive",
+  paused:    "bg-accent/5 border-accent/20 text-accent",
+}
+const STATUS_DOT = {
+  draft: "bg-[#ff9a00]", upcoming: "bg-blue-400", ongoing: "bg-green-400",
+  completed: "bg-muted-foreground", cancelled: "bg-destructive", paused: "bg-accent",
+}
 
-  // Mock tournament data
-  const tournaments = [
-    {
-      id: 1,
-      name: "Battle Royale Championship",
-      type: "BR",
-      players: 128,
-      status: "active",
-      prizePool: 10000,
-      created: "2024-02-15",
-    },
-    {
-      id: 2,
-      name: "CS:GO Pro League",
-      type: "CS",
-      players: 64,
-      status: "active",
-      prizePool: 25000,
-      created: "2024-02-10",
-    },
-    {
-      id: 3,
-      name: "Casual Weekend",
-      type: "BR",
-      players: 32,
-      status: "upcoming",
-      prizePool: 2000,
-      created: "2024-02-01",
-    },
-    {
-      id: 4,
-      name: "Elite Tournament",
-      type: "CS",
-      players: 256,
-      status: "completed",
-      prizePool: 50000,
-      created: "2024-01-20",
-    },
-    { id: 5, name: "Rookie Cup", type: "BR", players: 16, status: "paused", prizePool: 1000, created: "2024-01-15" },
-  ]
+export default function TournamentManagement() {
+  const [tournaments, setTournaments] = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [search,      setSearch]      = useState("")
+  const [filterStatus,setFilter]      = useState("all")
+  const [typeFilter,  setTypeFilter]  = useState("all")
+  const [sortBy,      setSortBy]      = useState("newest")
 
-  const filteredTournaments = tournaments.filter((t) => {
-    const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterStatus === "all" || t.status === filterStatus
-    return matchesSearch && matchesFilter
-  })
+  const fetchTournaments = async () => {
+    setLoading(true)
+    try {
+      const res  = await fetch("/api/admin/tournaments")
+      const data = await res.json()
+      if (data.success) setTournaments(data.tournaments)
+    } catch { toast.error("Failed to load tournaments") }
+    finally   { setLoading(false) }
+  }
 
-  const sortedTournaments = [...filteredTournaments].sort((a, b) => {
-    if (sortBy === "newest") return new Date(b.created).getTime() - new Date(a.created).getTime()
-    if (sortBy === "prize") return b.prizePool - a.prizePool
-    if (sortBy === "players") return b.players - a.players
-    return a.name.localeCompare(b.name)
-  })
+  useEffect(() => { fetchTournaments() }, [])
+
+  const handleStatusChange = async (id, status) => {
+    try {
+      const res  = await fetch(`/api/tournaments/${id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error || "Failed"); return }
+      toast.success(`Status updated to ${status}`)
+      fetchTournaments()
+    } catch { toast.error("Something went wrong") }
+  }
+
+  const handleDelete = async (id) => {
+    if (!confirm("Purge this operation sequence?")) return
+    try {
+      const res  = await fetch(`/api/tournaments/${id}`, { method: "DELETE" })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error || "Failed"); return }
+      toast.success("Tournament purged")
+      fetchTournaments()
+    } catch { toast.error("Something went wrong") }
+  }
+
+  const filtered = tournaments
+    .filter(t => {
+      const matchSearch = t.name?.toLowerCase().includes(search.toLowerCase())
+      const matchFilter = filterStatus === "all" || t.status === filterStatus
+      const matchType   = typeFilter === "all" || t.tournamentType === typeFilter
+      return matchSearch && matchFilter && matchType
+    })
+    .sort((a, b) => {
+      if (sortBy === "prize")   return (b.prizePool || 0) - (a.prizePool || 0)
+      if (sortBy === "players") return (b.filledSlots || 0) - (a.filledSlots || 0)
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    })
 
   return (
     <div className="space-y-6 font-sans text-foreground">
-      
-      {/* Sector Control Header */}
+
+      {/* Header */}
       <div className="flex justify-between items-center border-b border-border pb-4">
         <div>
           <h3 className="text-xl font-bold font-display tracking-wider text-primary flex items-center gap-2 uppercase">
@@ -76,151 +88,130 @@ export function TournamentManagementTab() {
             Operations Manifest
           </h3>
           <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-widest mt-1">
-            Active instances // live instance configuration pipelines
+            Active instances // live configuration pipelines
           </p>
         </div>
-        
-        <Button className="h-9 px-4 bg-primary/5 border border-primary/20 hover:border-primary text-primary hover:text-white hover:bg-primary/10 font-display font-bold text-xs uppercase tracking-wider rounded-sm transition-all duration-150 cursor-pointer active:scale-95 flex items-center gap-1.5">
-          <Plus className="h-3.5 w-3.5" />
-          Create Tournament
-        </Button>
+        <span className="px-2.5 py-0.5 bg-accent/10 border border-accent/20 text-accent font-display text-[10px] font-black tracking-widest uppercase rounded-sm">
+          {filtered.length} Operations
+        </span>
       </div>
 
-      {/* Embedded Filtering System Deck */}
-      <div className="grid md:grid-cols-3 gap-3 bg-card/40 p-3 border border-border/80 rounded-sm">
-        <div className="relative flex items-center">
+      {/* Filters */}
+      <div className="grid md:grid-cols-4 gap-3 bg-card/40 p-3 border border-border/80 rounded-sm">
+        <div className="relative flex items-center md:col-span-2">
           <Search className="absolute left-3 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
           <Input
             placeholder="Query operational handles..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-background border border-border rounded-sm text-foreground placeholder-muted-foreground text-sm font-semibold tracking-wide focus-visible:ring-primary/50 focus-visible:border-primary/50 h-9"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 bg-background border border-border rounded-sm text-foreground placeholder-muted-foreground text-sm font-semibold tracking-wide focus-visible:ring-primary/50 focus-visible:border-primary/50 h-9"
           />
         </div>
-
         <div className="relative flex items-center">
           <Filter className="absolute left-3 h-3.5 w-3.5 text-muted-foreground/60 pointer-events-none z-10" />
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="bg-background border border-border rounded-sm text-xs font-bold uppercase tracking-wider text-muted-foreground h-9 pl-9 cursor-pointer focus:ring-0 focus:ring-offset-0">
-              <SelectValue placeholder="Filter Pipeline Status" />
+          <Select value={filterStatus} onValueChange={setFilter}>
+            <SelectTrigger className="bg-background border border-border rounded-sm text-xs font-bold uppercase tracking-wider text-muted-foreground h-9 pl-9 cursor-pointer focus:ring-0">
+              <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent className="bg-card border border-border rounded-sm text-xs uppercase font-display font-bold">
-              <SelectItem value="all" className="cursor-pointer">All Status Matrices</SelectItem>
-              <SelectItem value="active" className="cursor-pointer">Active Sequence</SelectItem>
-              <SelectItem value="upcoming" className="cursor-pointer">Staged Pipeline</SelectItem>
-              <SelectItem value="completed" className="cursor-pointer">Terminated Safe</SelectItem>
-              <SelectItem value="paused" className="cursor-pointer">Halted Sequence</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="upcoming">Staged Pipeline</SelectItem>
+              <SelectItem value="ongoing">Active Sequence</SelectItem>
+              <SelectItem value="completed">Terminated Safe</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
         </div>
-
         <div className="relative flex items-center">
           <ArrowUpDown className="absolute left-3 h-3.5 w-3.5 text-accent pointer-events-none z-10" />
           <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="bg-background border border-primary/20 rounded-sm text-xs font-bold uppercase tracking-wider text-accent h-9 pl-9 cursor-pointer focus:ring-0 focus:ring-offset-0">
-              <SelectValue placeholder="Sort Parameters" />
+            <SelectTrigger className="bg-background border border-primary/20 rounded-sm text-xs font-bold uppercase tracking-wider text-accent h-9 pl-9 cursor-pointer focus:ring-0">
+              <SelectValue placeholder="Sort" />
             </SelectTrigger>
             <SelectContent className="bg-card border border-border rounded-sm text-xs uppercase font-display font-bold">
-              <SelectItem value="newest" className="cursor-pointer">Sequence: Generation</SelectItem>
-              <SelectItem value="prize" className="cursor-pointer">Sequence: Yield Value</SelectItem>
-              <SelectItem value="players" className="cursor-pointer">Sequence: Core Load</SelectItem>
-              <SelectItem value="name" className="cursor-pointer">Sequence: Alpha</SelectItem>
+              <SelectItem value="newest">Sequence: Generation</SelectItem>
+              <SelectItem value="prize">Sequence: Yield Value</SelectItem>
+              <SelectItem value="players">Sequence: Core Load</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {/* Tournaments Data Deck */}
-      <div className="overflow-x-auto rounded-sm border border-border/80 bg-card/20">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-border bg-background/50 font-display text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-              <th className="py-3 px-4">Operation Identifier</th>
-              <th className="py-3 px-4">Class</th>
-              <th className="py-3 px-4 text-center">Core Load</th>
-              <th className="py-3 px-4">Matrix Allocation</th>
-              <th className="py-3 px-4">Status Phase</th>
-              <th className="py-3 px-4 text-right">Operational Directives</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/40 text-xs font-semibold">
-            {sortedTournaments.map((tournament) => (
-              <tr
-                key={tournament.id}
-                className="hover:bg-primary/5 transition-colors duration-150 group"
-              >
-                <td className="py-3 px-4 text-white font-display text-sm tracking-wide group-hover:text-primary transition-colors">
-                  {tournament.name}
-                </td>
-                <td className="py-3 px-4">
-                  <span className="px-2 py-0.5 bg-primary/5 border border-primary/20 text-accent font-mono text-[10px] uppercase rounded-sm">
-                    {tournament.type}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-center font-display text-sm font-bold text-white">
-                  {tournament.players} <span className="text-[10px] text-muted-foreground font-sans font-normal">MAX</span>
-                </td>
-                <td className="py-3 px-4 font-display text-sm font-bold text-accent">
-                  ₹{tournament.prizePool.toLocaleString()}
-                </td>
-                <td className="py-3 px-4">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[10px] font-black font-display tracking-widest uppercase rounded-sm ${
-                      tournament.status === "active"
-                        ? "bg-success/5 border-success/20 text-success"
-                        : tournament.status === "upcoming"
-                          ? "bg-info/5 border-info/20 text-info"
-                          : tournament.status === "completed"
-                            ? "bg-muted-foreground/5 border-muted-foreground/20 text-muted-foreground"
-                            : "bg-destructive/5 border-destructive/20 text-accent"
-                    }`}
-                  >
-                    <span className={`w-1 h-1 rounded-full ${
-                      tournament.status === "active" 
-                        ? "bg-success" 
-                        : tournament.status === "upcoming" 
-                          ? "bg-info" 
-                          : tournament.status === "completed"
-                            ? "bg-muted-foreground"
-                            : "bg-accent"
-                    }`} />
-                    {tournament.status}
-                  </span>
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex gap-2 justify-end">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="h-7 border-border text-muted-foreground hover:text-white hover:bg-card text-[10px] uppercase font-display tracking-wider rounded-sm cursor-pointer flex items-center gap-1"
-                    >
-                      <Settings className="h-3 w-3" />
-                      Configure
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="destructive" 
-                      className="h-7 bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive hover:text-white text-[10px] uppercase font-display tracking-wider rounded-sm cursor-pointer transition-all duration-150 flex items-center gap-1"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      Purge
-                    </Button>
-                  </div>
-                </td>
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          <span className="ml-2 text-xs text-muted-foreground uppercase tracking-widest font-bold">Loading operations...</span>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-sm border border-border/80 bg-card/20">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-border bg-background/50 font-display text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                <th className="py-3 px-4">Operation Name</th>
+                <th className="py-3 px-4">Class</th>
+                <th className="py-3 px-4 text-center">Core Load</th>
+                <th className="py-3 px-4">Prize Yield</th>
+                <th className="py-3 px-4">Phase</th>
+                <th className="py-3 px-4 text-right">Directives</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-border/40 text-xs font-semibold">
+              {filtered.map(t => (
+                <tr key={t._id} className="hover:bg-primary/5 transition-colors duration-150 group">
+                  <td className="py-3 px-4 text-white font-display text-sm tracking-wide group-hover:text-primary transition-colors">
+                    <div>
+                      <p>{t.name}</p>
+                      <p className="text-[10px] text-muted-foreground font-sans font-normal mt-0.5">
+                        By {t.organizer?.username ?? "Unknown"} • {t.gameMode} {t.teamMode}
+                      </p>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className={`px-2 py-0.5 border text-[10px] font-black font-mono uppercase rounded-sm ${t.tournamentType === "paid" ? "bg-accent/5 border-accent/20 text-accent" : "bg-green-500/5 border-green-500/20 text-green-400"}`}>
+                      {t.tournamentType}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-center font-display text-sm font-bold text-white">
+                    {t.filledSlots}/{t.totalSlots} <span className="text-[10px] text-muted-foreground font-sans font-normal">MAX</span>
+                  </td>
+                  <td className="py-3 px-4 font-display text-sm font-bold text-accent">
+                    ₹{t.prizePool?.toLocaleString() ?? "0"}
+                  </td>
+                  <td className="py-3 px-4">
+                    <select
+                      value={t.status}
+                      onChange={e => handleStatusChange(t._id, e.target.value)}
+                      className="appearance-none px-2 py-1 bg-background border border-border rounded-sm text-muted-foreground text-[10px] font-bold uppercase tracking-wider focus:outline-none focus:border-primary/50 cursor-pointer"
+                    >
+                      {["draft","upcoming","ongoing","completed","cancelled"].map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        size="sm"
+                        onClick={() => handleDelete(t._id)}
+                        className="h-7 bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive hover:text-white text-[10px] uppercase font-display tracking-wider rounded-sm cursor-pointer transition-all duration-150 flex items-center gap-1"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        Purge
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      {/* Empty State Manifest Block */}
-      {sortedTournaments.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div className="text-center py-16 bg-card/20 border border-border rounded-sm">
           <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
             📡 Zero operation sequences matching current parameter vectors
-          </p>
-          <p className="text-xs text-muted-foreground/60 uppercase tracking-wider mt-1">
-            Alter target tracking parameters or pipeline filter states to update mapping index
           </p>
         </div>
       )}

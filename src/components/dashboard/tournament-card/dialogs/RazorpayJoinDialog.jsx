@@ -120,6 +120,8 @@ export default function RazorpayJoinDialog({ open, onClose, tournament, onSucces
   const [errMsg, setErrMsg]   = useState("");
   const [upiId, setUpiId]     = useState("");       // ← ADD
   const [upiError, setUpiError] = useState("");     // ← ADD
+  // ── UPI validation regex (mirrors the server-side check) ──
+const UPI_RE = /^[\w.\-]{2,}@[\w]{2,}$/;
 
   const player  = ctx?.player;
   const team    = ctx?.team;
