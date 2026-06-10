@@ -1,109 +1,162 @@
+"use client";
 
+import { useCallback, useContext, useState } from "react";
+import { useRouter } from "next/navigation";
 
-"use client"
+import MyContext from "@/context/ThemeProvider";
+import { EditProfileForm } from "@/components/forms/EditProfile";
 
-import { useCallback, useContext, useState } from "react"
-import { useRouter } from "next/navigation"
+import { GamingCard, DarkDialog, FONTS } from "./shared/primitives";
+import { GuestBanner } from "./shared/GuestBanner";
+import { UserProfileHeader } from "./UserProfileHeader";
+import { UserProfileStats } from "./UserProfileStats";
 
-import MyContext from "@/context/ThemeProvider"
-import { EditProfileForm } from "@/components/forms/EditProfile"
-
-import { GamingCard, DarkDialog, FONTS } from "./shared/primitives"
-import { GuestBanner }            from "./shared/GuestBanner"
-import { UserProfileHeader }      from "./UserProfileHeader"
-import { UserProfileStats }       from "./UserProfileStats"
-
-import { EditPlayerDialog }       from "./dialogs/EditPlayerDialog"
-import { EditTeamDialog }         from "./dialogs/EditTeamDialog"
-import { ViewClipsDialog }        from "./dialogs/ViewClipsDialog"
-import { ApplicationsDialog }     from "./dialogs/ApplicationsDialog"
-import { TeamDetailsDialog }     from "./dialogs/TeamDetailsDialog"
-import { TeamJoinRequestsDialog } from "./dialogs/TeamJoinRequestsDialog"
+import { EditPlayerDialog } from "./dialogs/EditPlayerDialog";
+import { EditTeamDialog } from "./dialogs/EditTeamDialog";
+import { ViewClipsDialog } from "./dialogs/ViewClipsDialog";
+import { ApplicationsDialog } from "./dialogs/ApplicationsDialog";
+import { TeamDetailsDialog } from "./dialogs/TeamDetailsDialog";
+import { TeamJoinRequestsDialog } from "./dialogs/TeamJoinRequestsDialog";
 
 /* ── Initial dialog-open state ─────────────────────────────── */
 const INITIAL_DIALOGS = {
-  editProfile:      false,
-  editPlayer:       false,
-  editTeam:         false,
-  viewClips:        false,
-  applications:     false,
-  teamDetails:      false,
+  editProfile: false,
+  editPlayer: false,
+  editTeam: false,
+  viewClips: false,
+  applications: false,
+  teamDetails: false,
   teamJoinRequests: false,
-}
+};
 
 export function UserProfile() {
-  const ctx    = useContext(MyContext)
-  const router = useRouter()
+  const ctx = useContext(MyContext);
+  const router = useRouter();
 
   /* ── Derived flags ─────────────────────────────────────── */
-  const isGuest   = ctx?.user?.isGuest || ctx?.user?.role === "guest"
-  const hasPlayer = Boolean(ctx?.player?._id)
-  const hasTeam   = Boolean(ctx?.team?._id)
+  const isGuest = ctx?.user?.isGuest || ctx?.user?.role === "guest";
+  const hasPlayer = Boolean(ctx?.player?._id);
+  const hasTeam = Boolean(ctx?.team?._id);
   const hasCaptain =
-    String(ctx?.team?.teamCaptain?._id) === String(ctx?.player?._id)
+    String(ctx?.team?.teamCaptain?._id) === String(ctx?.player?._id);
 
   /* ── Dialog state ──────────────────────────────────────── */
-  const [dialogs, setDialogs] = useState(INITIAL_DIALOGS)
+  const [dialogs, setDialogs] = useState(INITIAL_DIALOGS);
 
   const openDialog = useCallback((key, value) => {
-    setDialogs((prev) => ({ ...prev, [key]: value }))
-  }, [])
+    setDialogs((prev) => ({ ...prev, [key]: value }));
+  }, []);
 
   /* ── Mutations ─────────────────────────────────────────── */
-  const [isLeaving, setIsLeaving] = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false);
 
   const refreshContext = useCallback(async () => {
-    await ctx.fetchUser?.()
-    await ctx.fetchPlayer?.(ctx.user?.id)
-    await ctx.fetchTeam?.(ctx.player?._id)
-    await ctx.fetchActivePlayers?.()
-    await ctx.fetchActiveTeams?.()
-    await ctx.fetchPlayerRequests?.()
-  }, [ctx])
+    await ctx.fetchUser?.();
+    await ctx.fetchPlayer?.(ctx.user?.id);
+    await ctx.fetchTeam?.(ctx.player?._id);
+    await ctx.fetchActivePlayers?.();
+    await ctx.fetchActiveTeams?.();
+    await ctx.fetchPlayerRequests?.();
+  }, [ctx]);
 
   const handleLeave = async () => {
-    if (!ctx?.team?._id || !ctx?.player?._id) return
-    setIsLeaving(true)
+    if (!ctx?.team?._id || !ctx?.player?._id) return;
+
+    setIsLeaving(true);
+
     try {
-      const res  = await fetch("/api/team-requests/leave", {
-        method:  "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ teamId: ctx.team._id, playerId: ctx.player._id }),
-      })
-      const data = await res.json()
-      if (!data.success) return
-      await refreshContext()
+      const res = await fetch("/api/team-requests/leave", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          teamId: ctx.team._id,
+          playerId: ctx.player._id,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        toast.error("Leave Failed", data.error || "Failed to leave team");
+        return;
+      }
+
+      toast.team("Team Left", "You have successfully left the team");
+
+      await refreshContext();
+    } catch (err) {
+      console.error(err);
+
+      toast.error("Leave Error", "Something went wrong");
     } finally {
-      setIsLeaving(false)
+      setIsLeaving(false);
     }
-  }
+  };
 
   const handleKick = async (targetPlayerId) => {
-    const res  = await fetch("/api/team-requests/kick", {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({
-        teamId:         ctx.team._id,
-        captainId:      ctx.player._id,
-        targetPlayerId,
-      }),
-    })
-    const data = await res.json()
-    if (!data.success) return
-    await refreshContext()
-  }
+    try {
+      const res = await fetch("/api/team-requests/kick", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          teamId: ctx.team._id,
+          captainId: ctx.player._id,
+          targetPlayerId,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        toast.error("Kick Failed", data.error || "Failed to remove player");
+        return;
+      }
+
+      toast.team("Player Removed", "Player has been removed from the team");
+
+      await refreshContext();
+    } catch (err) {
+      console.error(err);
+
+      toast.error("Kick Error", "Something went wrong");
+    }
+  };
 
   const handleDisband = async () => {
-    const res  = await fetch("/api/team-requests/disband", {
-      method:  "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ teamId: ctx.team._id, captainId: ctx.player._id }),
-    })
-    const data = await res.json()
-    if (!data.success) return
-    openDialog("teamDetails", false)
-    await refreshContext()
-  }
+    try {
+      const res = await fetch("/api/team-requests/disband", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          teamId: ctx.team._id,
+          captainId: ctx.player._id,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        toast.error("Disband Failed", data.error || "Failed to disband team");
+        return;
+      }
+
+      toast.team("Team Disbanded", "The team has been permanently dissolved");
+
+      openDialog("teamDetails", false);
+
+      await refreshContext();
+    } catch (err) {
+      console.error(err);
+
+      toast.error("Disband Error", "Something went wrong");
+    }
+  };
 
   /* ── Render ────────────────────────────────────────────── */
   return (
@@ -111,7 +164,6 @@ export function UserProfile() {
       <style>{FONTS}</style>
 
       <GamingCard>
-
         {/* Header: avatar, name, action buttons */}
         <UserProfileHeader
           user={ctx?.user}
@@ -140,7 +192,6 @@ export function UserProfile() {
           team={ctx?.team}
           isGuest={isGuest}
         />
-
       </GamingCard>
 
       {/* ── Dialogs ──────────────────────────────────────────
@@ -200,8 +251,8 @@ export function UserProfile() {
           onKick={handleKick}
           onDisband={handleDisband}
           onOpenJoinRequests={() => {
-            openDialog("teamDetails", false)
-            openDialog("teamJoinRequests", true)
+            openDialog("teamDetails", false);
+            openDialog("teamJoinRequests", true);
           }}
         />
       )}
@@ -228,5 +279,5 @@ export function UserProfile() {
         />
       )}
     </>
-  )
+  );
 }

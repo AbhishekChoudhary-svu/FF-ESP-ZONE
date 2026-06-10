@@ -6,6 +6,7 @@ import { Team } from "@/models/teams.model";
 import { User } from "@/models/users.model";
 import { verifySession } from "@/lib/session";
 import { checkApiLimit } from "@/lib/rateLimit";
+import { sendNotification } from "@/lib/notificationService";
 
 export async function POST(req) {
   const ip =
@@ -203,6 +204,13 @@ export async function POST(req) {
       { uid: session.uid },
       { $inc: { tournamentsJoined: 1 } },
     );
+    await sendNotification({
+      userId: user._id,
+      title: "Registration Successful 🎮",
+      message: `You joined ${tournament.name}`,
+      type: "tournament",
+      data: { tournamentId: tournament._id },
+    });
 
     return NextResponse.json({
       success: true,

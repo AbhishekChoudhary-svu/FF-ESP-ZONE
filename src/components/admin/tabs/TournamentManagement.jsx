@@ -1,85 +1,154 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Trophy, Search, Filter, ArrowUpDown, Settings, Trash2, Loader2 } from "lucide-react"
-import toast from "react-hot-toast"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Trophy,
+  Search,
+  Filter,
+  ArrowUpDown,
+  Settings,
+  Trash2,
+  Loader2,
+} from "lucide-react";
+import toast from "react-hot-toast";
 
 const STATUS_STYLE = {
-  draft:     "bg-[#ff9a00]/5 border-[#ff9a00]/20 text-[#ff9a00]",
-  upcoming:  "bg-blue-500/5 border-blue-500/20 text-blue-400",
-  ongoing:   "bg-green-500/5 border-green-500/20 text-green-400",
-  completed: "bg-muted-foreground/5 border-muted-foreground/20 text-muted-foreground",
+  draft: "bg-[#ff9a00]/5 border-[#ff9a00]/20 text-[#ff9a00]",
+  upcoming: "bg-blue-500/5 border-blue-500/20 text-blue-400",
+  ongoing: "bg-green-500/5 border-green-500/20 text-green-400",
+  completed:
+    "bg-muted-foreground/5 border-muted-foreground/20 text-muted-foreground",
   cancelled: "bg-destructive/5 border-destructive/20 text-destructive",
-  paused:    "bg-accent/5 border-accent/20 text-accent",
-}
+  paused: "bg-accent/5 border-accent/20 text-accent",
+};
 const STATUS_DOT = {
-  draft: "bg-[#ff9a00]", upcoming: "bg-blue-400", ongoing: "bg-green-400",
-  completed: "bg-muted-foreground", cancelled: "bg-destructive", paused: "bg-accent",
-}
+  draft: "bg-[#ff9a00]",
+  upcoming: "bg-blue-400",
+  ongoing: "bg-green-400",
+  completed: "bg-muted-foreground",
+  cancelled: "bg-destructive",
+  paused: "bg-accent",
+};
 
 export default function TournamentManagement() {
-  const [tournaments, setTournaments] = useState([])
-  const [loading,     setLoading]     = useState(true)
-  const [search,      setSearch]      = useState("")
-  const [filterStatus,setFilter]      = useState("all")
-  const [typeFilter,  setTypeFilter]  = useState("all")
-  const [sortBy,      setSortBy]      = useState("newest")
+  const [tournaments, setTournaments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
 
   const fetchTournaments = async () => {
-    setLoading(true)
-    try {
-      const res  = await fetch("/api/admin/tournaments")
-      const data = await res.json()
-      if (data.success) setTournaments(data.tournaments)
-    } catch { toast.error("Failed to load tournaments") }
-    finally   { setLoading(false) }
-  }
+    setLoading(true);
 
-  useEffect(() => { fetchTournaments() }, [])
+    try {
+      const res = await fetch("/api/admin/tournaments");
+      const data = await res.json();
+
+      if (data.success) {
+        setTournaments(data.tournaments);
+      } else {
+        toast.error("Load Failed", data.error || "Failed to load tournaments");
+      }
+    } catch (err) {
+      console.error(err);
+
+      toast.error("Load Failed", "Failed to load tournaments");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTournaments();
+  }, []);
 
   const handleStatusChange = async (id, status) => {
     try {
-      const res  = await fetch(`/api/tournaments/${id}`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
+      const res = await fetch(`/api/tournaments/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ status }),
-      })
-      const data = await res.json()
-      if (!res.ok) { toast.error(data.error || "Failed"); return }
-      toast.success(`Status updated to ${status}`)
-      fetchTournaments()
-    } catch { toast.error("Something went wrong") }
-  }
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(
+          "Status Update Failed",
+          data.error || "Failed to update tournament status",
+        );
+        return;
+      }
+
+      toast.tournament("Tournament Updated", `Status changed to ${status}`);
+
+      fetchTournaments();
+    } catch (err) {
+      console.error(err);
+
+      toast.error("System Error", "Something went wrong");
+    }
+  };
 
   const handleDelete = async (id) => {
-    if (!confirm("Purge this operation sequence?")) return
+    if (!confirm("Purge this operation sequence?")) return;
+
     try {
-      const res  = await fetch(`/api/tournaments/${id}`, { method: "DELETE" })
-      const data = await res.json()
-      if (!res.ok) { toast.error(data.error || "Failed"); return }
-      toast.success("Tournament purged")
-      fetchTournaments()
-    } catch { toast.error("Something went wrong") }
-  }
+      const res = await fetch(`/api/tournaments/${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(
+          "Delete Failed",
+          data.error || "Failed to delete tournament",
+        );
+        return;
+      }
+
+      toast.tournament(
+        "Tournament Deleted",
+        "Tournament has been successfully removed",
+      );
+
+      fetchTournaments();
+    } catch (err) {
+      console.error(err);
+
+      toast.error("System Error", "Something went wrong");
+    }
+  };
 
   const filtered = tournaments
-    .filter(t => {
-      const matchSearch = t.name?.toLowerCase().includes(search.toLowerCase())
-      const matchFilter = filterStatus === "all" || t.status === filterStatus
-      const matchType   = typeFilter === "all" || t.tournamentType === typeFilter
-      return matchSearch && matchFilter && matchType
+    .filter((t) => {
+      const matchSearch = t.name?.toLowerCase().includes(search.toLowerCase());
+      const matchFilter = filterStatus === "all" || t.status === filterStatus;
+      const matchType = typeFilter === "all" || t.tournamentType === typeFilter;
+      return matchSearch && matchFilter && matchType;
     })
     .sort((a, b) => {
-      if (sortBy === "prize")   return (b.prizePool || 0) - (a.prizePool || 0)
-      if (sortBy === "players") return (b.filledSlots || 0) - (a.filledSlots || 0)
-      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-    })
+      if (sortBy === "prize") return (b.prizePool || 0) - (a.prizePool || 0);
+      if (sortBy === "players")
+        return (b.filledSlots || 0) - (a.filledSlots || 0);
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    });
 
   return (
     <div className="space-y-6 font-sans text-foreground">
-
       {/* Header */}
       <div className="flex justify-between items-center border-b border-border pb-4">
         <div>
@@ -103,7 +172,7 @@ export default function TournamentManagement() {
           <Input
             placeholder="Query operational handles..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 bg-background border border-border rounded-sm text-foreground placeholder-muted-foreground text-sm font-semibold tracking-wide focus-visible:ring-primary/50 focus-visible:border-primary/50 h-9"
           />
         </div>
@@ -141,7 +210,9 @@ export default function TournamentManagement() {
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-5 h-5 animate-spin text-primary" />
-          <span className="ml-2 text-xs text-muted-foreground uppercase tracking-widest font-bold">Loading operations...</span>
+          <span className="ml-2 text-xs text-muted-foreground uppercase tracking-widest font-bold">
+            Loading operations...
+          </span>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-sm border border-border/80 bg-card/20">
@@ -157,23 +228,32 @@ export default function TournamentManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40 text-xs font-semibold">
-              {filtered.map(t => (
-                <tr key={t._id} className="hover:bg-primary/5 transition-colors duration-150 group">
+              {filtered.map((t) => (
+                <tr
+                  key={t._id}
+                  className="hover:bg-primary/5 transition-colors duration-150 group"
+                >
                   <td className="py-3 px-4 text-white font-display text-sm tracking-wide group-hover:text-primary transition-colors">
                     <div>
                       <p>{t.name}</p>
                       <p className="text-[10px] text-muted-foreground font-sans font-normal mt-0.5">
-                        By {t.organizer?.username ?? "Unknown"} • {t.gameMode} {t.teamMode}
+                        By {t.organizer?.username ?? "Unknown"} • {t.gameMode}{" "}
+                        {t.teamMode}
                       </p>
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-0.5 border text-[10px] font-black font-mono uppercase rounded-sm ${t.tournamentType === "paid" ? "bg-accent/5 border-accent/20 text-accent" : "bg-green-500/5 border-green-500/20 text-green-400"}`}>
+                    <span
+                      className={`px-2 py-0.5 border text-[10px] font-black font-mono uppercase rounded-sm ${t.tournamentType === "paid" ? "bg-accent/5 border-accent/20 text-accent" : "bg-green-500/5 border-green-500/20 text-green-400"}`}
+                    >
                       {t.tournamentType}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-center font-display text-sm font-bold text-white">
-                    {t.filledSlots}/{t.totalSlots} <span className="text-[10px] text-muted-foreground font-sans font-normal">MAX</span>
+                    {t.filledSlots}/{t.totalSlots}{" "}
+                    <span className="text-[10px] text-muted-foreground font-sans font-normal">
+                      MAX
+                    </span>
                   </td>
                   <td className="py-3 px-4 font-display text-sm font-bold text-accent">
                     ₹{t.prizePool?.toLocaleString() ?? "0"}
@@ -181,11 +261,21 @@ export default function TournamentManagement() {
                   <td className="py-3 px-4">
                     <select
                       value={t.status}
-                      onChange={e => handleStatusChange(t._id, e.target.value)}
+                      onChange={(e) =>
+                        handleStatusChange(t._id, e.target.value)
+                      }
                       className="appearance-none px-2 py-1 bg-background border border-border rounded-sm text-muted-foreground text-[10px] font-bold uppercase tracking-wider focus:outline-none focus:border-primary/50 cursor-pointer"
                     >
-                      {["draft","upcoming","ongoing","completed","cancelled"].map(s => (
-                        <option key={s} value={s}>{s}</option>
+                      {[
+                        "draft",
+                        "upcoming",
+                        "ongoing",
+                        "completed",
+                        "cancelled",
+                      ].map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
                       ))}
                     </select>
                   </td>
@@ -216,5 +306,5 @@ export default function TournamentManagement() {
         </div>
       )}
     </div>
-  )
+  );
 }

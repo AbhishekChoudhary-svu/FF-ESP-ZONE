@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "../ui/GameToast";
+import { useRouter } from "next/navigation";
 
 export function EditProfileForm({ user, onClose }) {
   const [formData, setFormData] = useState({
@@ -13,6 +15,8 @@ export function EditProfileForm({ user, onClose }) {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const toast = useToast();
+  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -20,29 +24,54 @@ export function EditProfileForm({ user, onClose }) {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  e.preventDefault()
+  setLoading(true)
+  setError("")
 
-    try {
-      const res = await fetch("/api/users", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+  try {
+    const res = await fetch("/api/users", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    })
 
-      const data = await res.json();
+    const data = await res.json()
 
-      if (!res.ok) throw new Error(data.error || "Update failed");
+    if (!res.ok) {
+      toast.error(
+        "Update Failed",
+        data.error || "Failed to update profile"
+      )
 
-      onClose();
-      window.location.reload();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      setError(data.error || "Failed to update profile")
+      return
     }
-  };
+
+    toast.info(
+      "Profile Updated",
+      "Your account information has been updated"
+    )
+
+    onClose()
+
+    window.location.reload()
+
+  } catch (err) {
+    console.error(err)
+
+    toast.error(
+      "Update Error",
+      err.message || "Something went wrong"
+    )
+
+    setError(err.message)
+
+  } finally {
+    setLoading(false)
+  }
+}
 
   return (
     <div className="p-6 bg-[#0a0c10] border border-[#1e2330] rounded-lg font-['Rajdhani'] shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-xl mx-auto">

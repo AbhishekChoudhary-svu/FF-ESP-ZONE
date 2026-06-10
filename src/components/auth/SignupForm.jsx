@@ -5,10 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useGoogleLogin } from "@react-oauth/google";
 import { Loader2 } from "lucide-react";
-import toast from "react-hot-toast";
+import { useToast } from "../ui/GameToast";
 
 export function SignupForm() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -19,17 +18,20 @@ export function SignupForm() {
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [loadingGuest, setLoadingGuest] = useState(false);
 
+  const toast = useToast();
+  const router = useRouter();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
     if (password !== confirmPassword) {
-      setError("PASSWORDS DO NOT MATCH");
+      toast.error("Password Mismatch", "Passwords do not match");
       return;
     }
 
     if (password.length < 6) {
-      setError("PASSWORD MUST BE AT LEAST 6 CHARACTERS");
+      toast.error("Weak Password", "Password must be at least 6 characters");
       return;
     }
 
@@ -52,20 +54,28 @@ export function SignupForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || "Profile initialization failed");
+        toast.error(
+          "Signup Failed",
+          data.error || "Profile initialization failed",
+        );
         return;
       }
 
-      toast.success(data.message || "Registration sequence successful");
+      toast.signup(
+        "Account Created",
+        data.message || "Verification email has been sent",
+      );
       router.push(`/verifyEmail?email=${encodeURIComponent(email)}`);
     } catch (err) {
       console.error(err);
-      toast.error(err.message || "Uplink configuration failure");
+      toast.error(
+        "Signup Error",
+        err.message || "Uplink configuration failure",
+      );
     } finally {
       setLoading(false);
     }
   };
-
   // Remove handleGoogleSuccess and handleGoogleError functions
   // Add this instead:
   const googleLogin = useGoogleLogin({
@@ -81,7 +91,10 @@ export function SignupForm() {
         const userInfo = await userInfoRes.json();
 
         if (!userInfo.sub) {
-          toast.error("Failed to get Google user info");
+          toast.error(
+            "Google Authentication Failed",
+            "Failed to retrieve Google account information",
+          );
           return;
         }
 
@@ -93,12 +106,15 @@ export function SignupForm() {
         const data = await res.json();
 
         if (!res.ok) {
-          toast.error(data.error || "Google sign-in failed");
+          toast.error(
+            "Google Sign In Failed",
+            data.error || "Google authentication failed",
+          );
           return;
         }
 
-        toast.success("Google link sequence authorized");
-        window.location.href = "/dashboard";
+        toast.login("Welcome!", "Successfully signed in with Google");
+        router.push("/dashboard")
       } catch (err) {
         console.error(err);
         toast.error("Google sign-in failed");
@@ -108,7 +124,7 @@ export function SignupForm() {
     },
     onError: (err) => {
       console.error(err);
-      toast.error("Google sign-in failed");
+      toast.error("Google Sign In Failed", "Google authentication failed");
       setLoadingGoogle(false);
     },
     flow: "implicit",
@@ -125,15 +141,21 @@ export function SignupForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Failed to issue localized guest variables");
+        toast.error(
+          "Guest Login Failed",
+          data.error || "Failed to create guest session",
+        );
         return;
       }
 
-      toast.success("Temporary sandbox profile allocated");
-      window.location.href = "/dashboard";
+      toast.login(
+        "Guest Access Granted",
+        "Temporary sandbox profile allocated",
+      );
+      router.push("/dashboard")
     } catch (err) {
       console.error(err);
-      toast.error("Sandbox authentication pipeline error");
+      toast.error("Guest Login Error", "Sandbox authentication pipeline error");
     } finally {
       setLoadingGuest(false);
     }

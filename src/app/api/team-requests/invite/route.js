@@ -2,6 +2,7 @@ import { TeamRequest } from "@/models/teamReq.model"
 import {Team} from "@/models/teams.model"
 import {Player} from "@/models/players.model"
 import dbConnect from "@/lib/dbConnect"
+import { sendNotification } from "@/lib/notificationService"
 
 
 export async function POST(req) {
@@ -29,6 +30,13 @@ export async function POST(req) {
     type: "invite",
     createdBy: userId,
   })
+  await sendNotification({
+  userId:  targetUser._id,
+  title:   "Team Invitation 🛡",
+  message: `${team.teamName} invited you to join their squad`,
+  type:    "team",
+  data:    { teamId: team._id },
+})
 
   return Response.json({ success: true, request })
 }

@@ -1,6 +1,5 @@
-
-
-import { DarkDialog, PrimaryBtn, GhostBtn, Chip } from "../shared/primitives"
+import { useToast } from "@/components/ui/GameToast";
+import { DarkDialog, PrimaryBtn, GhostBtn, Chip } from "../shared/primitives";
 
 export function TeamJoinRequestsDialog({
   open,
@@ -9,34 +8,79 @@ export function TeamJoinRequestsDialog({
   playerId,
   onSuccess,
 }) {
+  const toast = useToast();
   const handleAccept = async (requestId) => {
-    const res = await fetch("/api/team-requests/accept", {
-      method:      "PATCH",
-      headers:     { "Content-Type": "application/json" },
-      credentials: "include",
-      body:        JSON.stringify({ requestId, playerId }),
-    })
-    const data = await res.json()
-    if (!data.success) { alert(data.message || "Failed"); return }
-    onOpenChange(false)
-    onSuccess?.()
-  }
+    try {
+      const res = await fetch("/api/team-requests/accept", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          requestId,
+          playerId,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        toast.error("Request Failed", data.message || "Failed to join team");
+        return;
+      }
+
+      toast.team("Request Accepted", "You have successfully joined the team");
+
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (err) {
+      console.error(err);
+
+      toast.error("System Error", "Something went wrong");
+    }
+  };
 
   const handleReject = async (requestId) => {
-    const res = await fetch("/api/team-requests/reject", {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ requestId, playerId }),
-    })
-    const data = await res.json()
-    if (data.success) {
-      onOpenChange(false)
-      onSuccess?.()
+    try {
+      const res = await fetch("/api/team-requests/reject", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          requestId,
+          playerId,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        toast.error(
+          "Request Failed",
+          data.message || "Failed to reject request",
+        );
+        return;
+      }
+
+      toast.team("Request Rejected", "Team invitation has been declined");
+
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (err) {
+      console.error(err);
+
+      toast.error("System Error", "Something went wrong");
     }
-  }
+  };
 
   return (
-    <DarkDialog open={open} onOpenChange={onOpenChange} title="Player Join Requests">
+    <DarkDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Player Join Requests"
+    >
       {teamRequests.length === 0 ? (
         <p className="text-center text-[#4a5060] py-4">No join requests</p>
       ) : (
@@ -52,14 +96,14 @@ export function TeamJoinRequestsDialog({
         </div>
       )}
     </DarkDialog>
-  )
+  );
 }
 
 /* ── Row ───────────────────────────────────────────────────── */
 function JoinRequestRow({ req, onAccept, onReject }) {
-  const isPending  = req.status === "pending"
-  const isAccepted = req.status === "accepted"
-  const isRejected = req.status === "rejected"
+  const isPending = req.status === "pending";
+  const isAccepted = req.status === "accepted";
+  const isRejected = req.status === "rejected";
 
   return (
     <div className="flex items-center justify-between p-3 rounded-lg bg-[#0f1318] border border-[#1e2330]">
@@ -97,5 +141,5 @@ function JoinRequestRow({ req, onAccept, onReject }) {
         {!isPending && isRejected && <Chip variant="red">❌ Rejected</Chip>}
       </div>
     </div>
-  )
+  );
 }

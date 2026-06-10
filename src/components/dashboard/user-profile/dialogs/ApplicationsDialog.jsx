@@ -1,5 +1,6 @@
 
 
+import { useToast } from "@/components/ui/GameToast"
 import { DarkDialog, PrimaryBtn, GhostBtn, Chip } from "../shared/primitives"
 
 export function ApplicationsDialog({
@@ -9,31 +10,89 @@ export function ApplicationsDialog({
   playerId,
   onSuccess,
 }) {
+  const toast = useToast();
   const handleAccept = async (requestId) => {
+  try {
     const res = await fetch("/api/team-requests/accept", {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
       credentials: "include",
-      body:    JSON.stringify({ requestId, playerId }),
+      body: JSON.stringify({
+        requestId,
+        playerId,
+      }),
     })
+
     const data = await res.json()
-    if (!data.success) { alert(data.message || "Failed"); return }
+
+    if (!data.success) {
+      toast.error(
+        "Join Request Failed",
+        data.message || "Failed to accept invitation"
+      )
+      return
+    }
+
+    toast.team(
+      "Team Joined",
+      "You have successfully joined the team"
+    )
+
     onOpenChange(false)
     onSuccess?.()
-  }
 
-  const handleReject = async (requestId) => {
-    const res = await fetch("/api/team-requests/reject", {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ requestId, playerId }),
-    })
-    const data = await res.json()
-    if (data.success) {
-      onOpenChange(false)
-      onSuccess?.()
-    }
+  } catch (err) {
+    console.error(err)
+
+    toast.error(
+      "System Error",
+      "Something went wrong"
+    )
   }
+}
+
+const handleReject = async (requestId) => {
+  try {
+    const res = await fetch("/api/team-requests/reject", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        requestId,
+        playerId,
+      }),
+    })
+
+    const data = await res.json()
+
+    if (!data.success) {
+      toast.error(
+        "Reject Failed",
+        data.message || "Failed to reject invitation"
+      )
+      return
+    }
+
+    toast.team(
+      "Invitation Rejected",
+      "Team invitation declined successfully"
+    )
+
+    onOpenChange(false)
+    onSuccess?.()
+
+  } catch (err) {
+    console.error(err)
+
+    toast.error(
+      "System Error",
+      "Something went wrong"
+    )
+  }
+}
 
   return (
     <DarkDialog open={open} onOpenChange={onOpenChange} title="Team Requests">

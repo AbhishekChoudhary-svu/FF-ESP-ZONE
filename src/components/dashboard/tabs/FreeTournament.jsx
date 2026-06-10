@@ -5,6 +5,7 @@ import { CreateTournamentForm } from "@/components/forms/CreateTournament";
 import { TournamentCard } from "../tournament-card/TournamentCard";
 import MyContext from "@/context/ThemeProvider";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/GameToast";
 
 const STATUS_TABS = [
   {
@@ -46,7 +47,7 @@ export function FreeTournamentsTab() {
   const isCaptain = ctx?.player?.isCaptain;
   const userRole = ctx?.user?.role;
   const canCreate = isCaptain && !isGuest;
-  const canModerate = ["admin", "moderator"].includes(userRole)
+  const canModerate = ["admin", "moderator"].includes(userRole);
 
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,39 +59,56 @@ export function FreeTournamentsTab() {
   const [statusTab, setStatusTab] = useState("upcoming");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const toast = useToast();
+
   const fetchTournaments = async () => {
     setLoading(true);
     setError("");
+
     try {
       const params = new URLSearchParams({
         status: statusTab,
       });
-      if (gameMode !== "all") params.set("gameMode", gameMode.toUpperCase());
-      if (teamMode !== "all")
+
+      if (gameMode !== "all") {
+        params.set("gameMode", gameMode.toUpperCase());
+      }
+
+      if (teamMode !== "all") {
         params.set(
           "teamMode",
           teamMode.charAt(0).toUpperCase() + teamMode.slice(1),
         );
+      }
 
       const res = await fetch(`/api/tournaments/free?${params}`);
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Failed to load tournaments");
+        const message = data.error || "Failed to load tournaments";
+
+        setError(message);
+
+        toast.error("Load Failed", message);
+
         return;
       }
+
       setTournaments(data.tournaments || []);
     } catch (err) {
       console.error(err);
+
       setError("Failed to connect to server");
+
+      toast.error("Connection Error", "Failed to connect to server");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-  fetchTournaments()
-}, [gameMode, teamMode, statusTab])
+    fetchTournaments();
+  }, [gameMode, teamMode, statusTab]);
 
   // Client-side search + sort
   const processed = tournaments
@@ -212,14 +230,20 @@ export function FreeTournamentsTab() {
         </div>
       </div>
 
-       {/* Draft notice banner */}
+      {/* Draft notice banner */}
       {statusTab === "draft" && canModerate && (
         <div className="flex items-start gap-3 px-4 py-3 bg-[#ff9a00]/5 border border-[#ff9a00]/20 rounded-lg">
           <span className="text-lg">📝</span>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-[#ff9a00]">Draft Tournaments</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#ff9a00]">
+              Draft Tournaments
+            </p>
             <p className="text-[11px] text-[#8090a0] mt-0.5">
-              These are saved but not visible to players. Use <strong className="text-[#ff9a00]">⚡ Change Status → Publish</strong> on any card to make it live.
+              These are saved but not visible to players. Use{" "}
+              <strong className="text-[#ff9a00]">
+                ⚡ Change Status → Publish
+              </strong>{" "}
+              on any card to make it live.
             </p>
           </div>
         </div>

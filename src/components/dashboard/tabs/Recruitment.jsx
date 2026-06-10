@@ -2,12 +2,11 @@
 
 import { useContext, useState } from "react";
 import MyContext from "@/context/ThemeProvider";
-
+import { useToast } from "@/components/ui/GameToast";
 
 function PlayerCard({ player, onInspect, onInvite, isInvited, isCaptain }) {
   return (
     <div className="bg-[#0a0c10] border border-[#1e2330] hover:border-[#ff6b00]/40 rounded-lg p-3 sm:p-4 flex flex-col items-center justify-between hover:shadow-[0_4px_20px_rgba(255,107,0,0.08)] group transition-all duration-200 relative overflow-hidden">
-
       {/* Top-left corner accent */}
       <div className="absolute top-0 left-0 w-8 h-[2px] bg-[#ff6b00] opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
 
@@ -43,12 +42,14 @@ function PlayerCard({ player, onInspect, onInvite, isInvited, isCaptain }) {
             IGL
           </span>
         )}
-        
-        <span className={`px-1.5 py-0.5 text-[9px] font-black tracking-widest uppercase rounded-sm border ${
-          player.teamId == null
-            ? "bg-[#ff9a00]/10 border-[#ff9a00]/20 text-[#ff9a00]"
-            : "bg-[#1e2330] border-[#1e2330] text-[#4e5d78]"
-        }`}>
+
+        <span
+          className={`px-1.5 py-0.5 text-[9px] font-black tracking-widest uppercase rounded-sm border ${
+            player.teamId == null
+              ? "bg-[#ff9a00]/10 border-[#ff9a00]/20 text-[#ff9a00]"
+              : "bg-[#1e2330] border-[#1e2330] text-[#4e5d78]"
+          }`}
+        >
           {player.teamId == null ? "Free Agent" : "In Squad"}
         </span>
         {player.isActive ? (
@@ -68,7 +69,6 @@ function PlayerCard({ player, onInspect, onInvite, isInvited, isCaptain }) {
 
       {/* Actions */}
       <div className="w-full  space-y-1.5">
-        
         <button
           onClick={() => onInspect?.(player)}
           className="w-full py-1.5 text-center text-[10px] font-bold uppercase tracking-wider rounded bg-[#141822] border border-[#1e2330] text-[#8090a0] hover:text-[#ff8c30] hover:border-[#ff6b00]/30 hover:bg-[#ff6b00]/5 transition-all cursor-pointer"
@@ -91,11 +91,13 @@ function PlayerCard({ player, onInspect, onInvite, isInvited, isCaptain }) {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 export function PlayerRecruitmentTab() {
   const context = useContext(MyContext);
+
+  const toast = useToast();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("recent");
@@ -173,20 +175,36 @@ export function PlayerRecruitmentTab() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
+        toast.error(
+          "Invitation Failed",
+          data.message || "Failed to send invite",
+        );
+
         throw new Error(data.message || "Failed to send invite");
       }
+
+      toast.team("Invitation Sent", "Team invitation sent successfully");
 
       return data;
     } catch (error) {
       console.error("INVITE PLAYER ERROR:", error);
-      return { success: false, message: error.message };
+
+      toast.error("System Error", error.message || "Something went wrong");
+
+      return {
+        success: false,
+        message: error.message,
+      };
     }
   };
 
   const handleJoinRequest = async (teamId) => {
     try {
       if (!context?.player?._id || !context?.user?.id) {
-        console.error("Login required");
+        toast.login(
+          "Login Required",
+          "Please login before sending a join request",
+        );
         return;
       }
 
@@ -204,13 +222,19 @@ export function PlayerRecruitmentTab() {
 
       const data = await res.json();
 
-      if (data.success) {
-        console.log("Join request sent");
-      } else {
-        console.error(data.message || "Failed to send request");
+      if (!data.success) {
+        toast.error(
+          "Request Failed",
+          data.message || "Failed to send join request",
+        );
+        return;
       }
+
+      toast.team("Request Sent", "Join request sent successfully");
     } catch (err) {
       console.error("JOIN REQUEST ERROR:", err);
+
+      toast.error("System Error", "Something went wrong");
     }
   };
 
@@ -257,29 +281,27 @@ export function PlayerRecruitmentTab() {
       {/* Main Roster Overview Card Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
         {/* Active Player Card Render loops */}
-         {players.map((player) => (
-    <PlayerCard
-      key={player._id}
-      player={player}
-      onInspect={openDetails}
-      onInvite={async (p) => {
-        const res = await invitePlayer({
-          teamId: context.team?._id,
-          playerId: p._id,
-          userId: context.player?._id,
-        })
-        if (res.success) {
-          setInvitedPlayers(prev => new Set([...prev, p._id]))
-        } else {
-          alert(res.message)
-        }
-      }}
-      isInvited={invitedPlayers.has(player._id)}
-      isCaptain={hasCaptain}
-    />
-  ))}
-
-         
+        {players.map((player) => (
+          <PlayerCard
+            key={player._id}
+            player={player}
+            onInspect={openDetails}
+            onInvite={async (p) => {
+              const res = await invitePlayer({
+                teamId: context.team?._id,
+                playerId: p._id,
+                userId: context.player?._id,
+              });
+              if (res.success) {
+                setInvitedPlayers((prev) => new Set([...prev, p._id]));
+              } else {
+                alert(res.message);
+              }
+            }}
+            isInvited={invitedPlayers.has(player._id)}
+            isCaptain={hasCaptain}
+          />
+        ))}
 
         {/* Registered Team Card Render loops */}
         {teams.map((team) => (

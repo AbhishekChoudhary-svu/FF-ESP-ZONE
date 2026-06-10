@@ -9,22 +9,36 @@ import { WorldChatTab } from "./tabs/WorldChat";
 import { UserProfile } from "./user-profile/UserProfile";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { NotificationBell } from "./NotificationBell";
+import { useToast } from "../ui/GameToast";
 
 export function DashboardLayout({ user }) {
   const router = useRouter();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState("recruitment");
 
   const handleLogout = async () => {
     try {
-      const res = await fetch("/api/auth/logout", { method: "POST" });
+      const res = await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+
       const data = await res.json();
+
       if (!res.ok) {
+        toast.error("Logout Failed", data.error || "Failed to logout");
+
         console.error("Logout failed:", data.error);
         return;
       }
+
+      toast.logout("Logged Out", "You have been signed out successfully");
+
       router.replace("/login");
     } catch (err) {
       console.error("Unexpected error during logout:", err);
+
+      toast.error("Logout Error", "Something went wrong while logging out");
     }
   };
 
@@ -111,12 +125,15 @@ export function DashboardLayout({ user }) {
                 </span>
               </Link>
             </div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-1.5 rounded bg-transparent border border-[#2a2e3a] text-[#8090a0] text-xs font-bold tracking-wider uppercase cursor-pointer hover:border-[#ff6b00]/40 hover:text-[#ff8c30] hover:bg-[#ff6b00]/5 active:scale-95 transition-all duration-200"
-            >
-              Logout
-            </button>
+            <div className="flex items-center gap-3">
+              <NotificationBell />
+              <button
+                onClick={handleLogout}
+                className="px-4 py-1.5 rounded bg-transparent border border-[#2a2e3a] text-[#8090a0] text-xs font-bold tracking-wider uppercase cursor-pointer hover:border-[#ff6b00]/40 hover:text-[#ff8c30] hover:bg-[#ff6b00]/5 active:scale-95 transition-all duration-200"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
 

@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import { useGoogleLogin } from "@react-oauth/google"
-import { toast } from "react-hot-toast"
 import { Loader2 } from "lucide-react"
 import Link from "next/link"
+import { useToast } from "../ui/GameToast"
+import { useRouter } from "next/navigation"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -13,104 +14,103 @@ export function LoginForm() {
   const [loadingGoogle, setLoadingGoogle] = useState(false)
   const [loadingGuest, setLoadingGuest] = useState(false)
 
+  const toast = useToast()
+  const router = useRouter()
+
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await response.json()
+  e.preventDefault()
+  setLoading(true)
+  try {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    })
+    const data = await response.json()
 
-      if (response.status === 403) {
-        toast.error(data.error || "Please verify your email first")
-        window.location.href = `/verifyEmail?email=${encodeURIComponent(email)}`
-        return
-      }
-      if (!response.ok) {
-        toast.error(data.error || "Login failed")
-        return
-      }
-      toast.success(data.message || "Logged in successfully")
-      window.location.href = "/dashboard"
-    } catch (err) {
-      console.error(err)
-      toast.error("Something went wrong")
-    } finally {
-      setLoading(false)
+    if (response.status === 403) {
+      toast.error("Verify Email", data.error || "Please verify your email first")
+      router.push(`/verifyEmail?email=${encodeURIComponent(email)}`);
+      return
     }
+    if (!response.ok) {
+      toast.error("Login Failed", data.error || "Login failed")
+      return
+    }
+    toast.login("Welcome Back!", data.message || "Logged in successfully")
+    router.push("/dashboard")
+  } catch (err) {
+    console.error(err)
+    toast.error("Error", "Something went wrong")
+  } finally {
+    setLoading(false)
   }
+}
 
-  // useGoogleLogin with access_token flow — works on all devices and browsers
-  // no popup, no third party cookie issues, no origin blocking
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setLoadingGoogle(true)
-      try {
-        // Fetch user info using the access token
-        const userInfoRes = await fetch(
-          "https://www.googleapis.com/oauth2/v3/userinfo",
-          { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
-        )
-        const userInfo = await userInfoRes.json()
-
-        if (!userInfo.sub) {
-          toast.error("Failed to get Google user info")
-          return
-        }
-
-        const res = await fetch("/api/auth/googleAuth", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userInfo }),
-        })
-        const data = await res.json()
-
-        if (!res.ok) {
-          toast.error(data.error || "Google sign-in failed")
-          return
-        }
-
-        toast.success("Logged in successfully")
-        window.location.href = "/dashboard"
-      } catch (err) {
-        console.error(err)
-        toast.error("Google sign-in failed")
-      } finally {
-        setLoadingGoogle(false)
-      }
-    },
-    onError: (err) => {
-      console.error(err)
-      toast.error("Google sign-in failed")
-      setLoadingGoogle(false)
-    },
-    flow: "implicit",
-  })
-
-  const handleGuestLogin = async () => {
-    setLoadingGuest(true)
+const googleLogin = useGoogleLogin({
+  onSuccess: async (tokenResponse) => {
+    setLoadingGoogle(true)
     try {
-      const res = await fetch("/api/auth/guest", {
+      const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+      })
+      const userInfo = await userInfoRes.json()
+
+      if (!userInfo.sub) {
+        toast.error("Google Error", "Failed to get Google user info")
+        return
+      }
+
+      const res = await fetch("/api/auth/googleAuth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userInfo }),
       })
       const data = await res.json()
+
       if (!res.ok) {
-        toast.error(data.error || "Guest login failed")
+        toast.error("Sign-in Failed", data.error || "Google sign-in failed")
         return
       }
-      toast.success("Logged in as guest")
-      window.location.href = "/dashboard"
+
+      toast.login("Welcome!", "Logged in with Google")
+      router.push("/dashboard")
     } catch (err) {
       console.error(err)
-      toast.error("Something went wrong")
+      toast.error("Google Error", "Google sign-in failed")
     } finally {
-      setLoadingGuest(false)
+      setLoadingGoogle(false)
     }
+  },
+  onError: (err) => {
+    console.error(err)
+    toast.error("Google Error", "Google sign-in failed")
+    setLoadingGoogle(false)
+  },
+  flow: "implicit",
+})
+
+const handleGuestLogin = async () => {
+  setLoadingGuest(true)
+  try {
+    const res = await fetch("/api/auth/guest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      toast.error("Guest Error", data.error || "Guest login failed")
+      return
+    }
+    toast.login("Welcome, Guest!", "Logged in as guest")
+    router.push("/dashboard")
+  } catch (err) {
+    console.error(err)
+    toast.error("Error", "Something went wrong")
+  } finally {
+    setLoadingGuest(false)
   }
+}
 
   return (
     <div className="w-full max-w-md mx-auto p-5 bg-[#0a0c10] border border-[#1e2330] rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.4)] font-['Rajdhani'] text-[#d0d5df]">

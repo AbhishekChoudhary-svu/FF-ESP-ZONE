@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeProvider";
 import { Toaster } from "react-hot-toast";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { GameToastProvider } from "@/components/ui/GameToast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,7 +31,9 @@ export default function RootLayout({ children }) {
           clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}
         >
           <ThemeProvider>
+            <GameToastProvider>  
             {children}
+             </GameToastProvider> 
           </ThemeProvider>
 
           <Toaster position="top-right" />

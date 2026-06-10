@@ -24,6 +24,7 @@ import { Tournament } from "@/models/tournaments.model";
 import { Player } from "@/models/players.model";
 import { Team } from "@/models/teams.model";
 import { User } from "@/models/users.model";
+import { sendNotification } from "@/lib/notificationService";
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -149,6 +150,13 @@ async function handlePaymentCaptured(entity) {
     tournament.save(),
     User.updateOne({ _id: user._id }, { $inc: { tournamentsJoined: 1 } }),
   ]);
+  await sendNotification({
+  userId:  user._id,
+  title:   "Payment Confirmed ✅",
+  message: `Entry fee paid for ${tournament.name}. You're registered!`,
+  type:    "payment",
+  data:    { tournamentId: tournament._id },
+})
 
   console.log(`[webhook] payment.captured: player joined tournament. orderId=${orderId}`);
 }
